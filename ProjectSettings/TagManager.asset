@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Pickup
   - Interactable
+  - BuyButton
   layers:
   - Default
   - TransparentFX

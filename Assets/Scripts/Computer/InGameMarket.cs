@@ -17,17 +17,28 @@ public class InGameMarket : MonoBehaviour
 
     void Start()
     {
-        // Buy butonlarýnýn click eventlerini baðlayalým
-        Button[] buyButtons = GetComponentsInChildren<Button>();
-        for (int i = 0; i < buyButtons.Length; i++)
+        // Tüm butonlarý al
+        Button[] buttons = GetComponentsInChildren<Button>();
+        for (int i = 0; i < buttons.Length; i++)
         {
             int index = i; // Lambda closure hatasýný önlemek için index kopyasý
-            buyButtons[i].onClick.AddListener(() => BuyProduct(index));
+
+            // Butonun tag'ini kontrol et
+            if (buttons[i].CompareTag("BuyButton")) // Sadece BuyButton tag'ine sahip butonlar için
+            {
+                buttons[i].onClick.AddListener(() => BuyProduct(index));
+            }
         }
     }
 
     void BuyProduct(int productIndex)
     {
+        if (productIndex < 0 || productIndex >= products.Length)
+        {
+            Debug.LogError("Geçersiz ürün indeksi!");
+            return;
+        }
+
         Product product = products[productIndex];
 
         // Bakiyeyi kontrol et
