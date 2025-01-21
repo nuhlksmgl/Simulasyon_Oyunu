@@ -1,5 +1,5 @@
 using UnityEngine;
-using TMPro; // TextMeshPro kullanýmý için
+using TMPro;
 
 public class PlayerBalance : MonoBehaviour
 {
@@ -38,5 +38,11 @@ public class PlayerBalance : MonoBehaviour
     void UpdateBalanceUI()
     {
         balanceText.text = $"Bakiyen: {balance} $";
+    }
+
+    // Bakiyeyi döndüren fonksiyon
+    public int GetBalance()
+    {
+        return balance;
     }
 }

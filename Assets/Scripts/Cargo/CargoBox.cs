@@ -3,37 +3,59 @@ using System.Collections.Generic;
 
 public class CargoBox : MonoBehaviour
 {
-    public bool isLargeBox; // B�y�k veya k���k kutu durumu
-    public float detectionRadius = 3f; // Alg�lama mesafesi
-    public Transform[] productSlots; // �r�nlerin yerle�ece�i slotlar�n referanslar�
+    public bool isLargeBox; // Büyük veya küçük kutu durumu
+    public float detectionRadius = 3f; // Algılama mesafesi
+    public Transform[] productSlots; // Ürünlerin yerleşeceği slotların referansları
+    public GameObject fullBoxPanel; // Kargo kutusu dolunca açılacak panel
 
-    private List<Product> placedProducts = new List<Product>(); // Yerle�tirilen �r�nlerin listesi
+    private List<Product> placedProducts = new List<Product>(); // Yerleştirilen ürünlerin listesi
 
-    // �r�n�n kutuya yak�n olup olmad���n� kontrol eder
+    void Start()
+    {
+        if (fullBoxPanel != null)
+        {
+            fullBoxPanel.SetActive(false); // Paneli başlangıçta kapalı yap
+        }
+    }
+
+    // Ürünün kutuya yakın olup olmadığını kontrol eder
     public bool IsInRange(Vector3 productPosition)
     {
         return Vector3.Distance(transform.position, productPosition) <= detectionRadius;
     }
 
-    // �r�n� kutuya yerle�tirmeyi dener
+    // Ürünü kutuya yerleştirmeyi dener
     public bool TryPlaceProduct(Product product)
     {
         if (placedProducts.Count >= productSlots.Length)
         {
             Debug.Log("Kargo kutusu dolu.");
-            return false; // Kutu doluysa �r�n� yerle�tirme
+            if (fullBoxPanel != null)
+            {
+                fullBoxPanel.SetActive(true); // Paneli aç
+            }
+            return false; // Kutu doluysa ürünü yerleştirme
         }
 
-        // �r�n� bo� slota yerle�tir
-        int slotIndex = placedProducts.Count; // Mevcut �r�n say�s�, yerle�tirilecek slotu g�sterir
+        // Ürünü boş slota yerleştir
+        int slotIndex = placedProducts.Count; // Mevcut ürün sayısı, yerleştirilecek slotu gösterir
         Transform slot = productSlots[slotIndex];
 
-        product.transform.SetParent(slot); // �r�n� slotun child'� yap
-        product.transform.localPosition = Vector3.zero; // Slotun pozisyonuna g�re yerle�tir
-        product.transform.localRotation = Quaternion.identity; // Slotun y�n�yle hizala
+        product.transform.SetParent(slot); // Ürünü slotun child'ı yap
+        product.transform.localPosition = Vector3.zero; // Slotun pozisyonuna göre yerleştir
+        product.transform.localRotation = Quaternion.identity; // Slotun yönüyle hizala
 
-        placedProducts.Add(product); // �r�n� yerle�tirilen �r�nler listesine ekle
-        Debug.Log($"{product.gameObject.name} kargo kutusuna yerle�tirildi.");
+        placedProducts.Add(product); // Ürünü yerleştirilen ürünler listesine ekle
+        Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildi.");
+
+        // Kargo kutusu dolmuşsa paneli aç
+        if (placedProducts.Count >= productSlots.Length)
+        {
+            if (fullBoxPanel != null)
+            {
+                fullBoxPanel.SetActive(true);
+            }
+        }
 
         return true;
     }
