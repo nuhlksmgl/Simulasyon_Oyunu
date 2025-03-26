@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System.Collections.Generic;
 
 public class InGameMarket : MonoBehaviour
@@ -8,10 +9,11 @@ public class InGameMarket : MonoBehaviour
     public class MarketProduct
     {
         public string productName;
-        public int price;
+        public int price; // Tekrar public field olarak tanýmlandý
         public GameObject productPrefab;
         public int quantity = 0;
         public bool isLarge;
+        public TextMeshProUGUI priceText;
     }
 
     [System.Serializable]
@@ -51,6 +53,14 @@ public class InGameMarket : MonoBehaviour
                 buttons[i].onClick.AddListener(() => AddToBasket(index));
             }
         }
+
+        UpdatePriceUI();
+    }
+
+    // Inspector’da deðer deðiþtiðinde çaðrýlýr
+    void OnValidate()
+    {
+        UpdatePriceUI();
     }
 
     public void AddToBasket(int productIndex)
@@ -123,13 +133,13 @@ public class InGameMarket : MonoBehaviour
             return;
         }
 
-        Vector3 prefabScale = product.productPrefab.transform.localScale; // Prefabýn orijinal ölçeði
+        Vector3 prefabScale = product.productPrefab.transform.localScale;
         Debug.Log($"{product.productName} prefab ölçeði: {prefabScale}");
 
         for (int i = 0; i < quantity; i++)
         {
             GameObject productInstance = Instantiate(product.productPrefab, spawnPosition, product.productPrefab.transform.rotation);
-            productInstance.transform.localScale = prefabScale; // Prefabýn orijinal ölçeðini uygula
+            productInstance.transform.localScale = prefabScale;
             Debug.Log($"{product.productName} spawn olduktan sonra ölçek: {productInstance.transform.localScale}");
 
             Product productComponent = productInstance.GetComponent<Product>();
@@ -203,5 +213,22 @@ public class InGameMarket : MonoBehaviour
             }
         }
         return availableProducts;
+    }
+
+    public void UpdatePriceUI()
+    {
+        foreach (MarketProduct product in products)
+        {
+            if (product.priceText != null)
+            {
+                string priceString = product.price.ToString() + " $";
+                product.priceText.text = priceString;
+                Debug.Log($"{product.productName} için fiyat güncellendi: {priceString}");
+            }
+            else
+            {
+                Debug.LogWarning($"{product.productName} için fiyat TextMeshProUGUI referansý eksik!");
+            }
+        }
     }
 }
