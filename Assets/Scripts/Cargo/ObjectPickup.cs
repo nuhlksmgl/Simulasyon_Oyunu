@@ -2,112 +2,324 @@ using UnityEngine;
 
 public class ObjectPickup : MonoBehaviour
 {
-    public Transform holdPosition; // Ürünün elde tutulacaðý pozisyon
-    private GameObject heldObject = null;
+    [SerializeField] private Transform holdPosition; // Nesnenin tutulacaðý pozisyon
+    [SerializeField] private float pickupDistance = 5.0f; // Alým mesafesi
+    [SerializeField] private float lerpSpeed = 20f; // Hareket yumuþaklýðý
+    [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f); // Yeþil vurgu rengi
+    [SerializeField] private GameObject crosshair; // Niþangah UI objesi
+    [SerializeField] private Transform[] shelfSlots; // Raf slotlarýnýn dizisi
+    [SerializeField] private float shelfPlaceDistance = 2.0f; // Rafe yerleþtirme mesafesi
+    [SerializeField] private float cargoPlaceDistance = 2.0f; // Kargo kutusuna yerleþtirme mesafesi
 
-    void Update()
+    private GameObject heldObject; // Tutulan nesne
+    private GameObject highlightedObject; // Vurgulanan nesne
+    private Camera mainCamera;
+    private Color originalColor; // Nesnenin orijinal rengi
+    private bool isHighlighted; // Vurgu durumunu takip et
+    private GameObject shelf; // Raf objesi (referans için)
+    private LayerMask pickupLayer; // Sadece Pickup layer’ýný hedefleyen maske
+
+    private void Awake()
     {
-        if (Input.GetMouseButtonDown(0)) // Sol mouse tuþuyla ürünü al ve býrak
+        mainCamera = Camera.main;
+        if (holdPosition == null) Debug.LogError("HoldPosition atanmamýþ!", this);
+        if (crosshair == null) Debug.LogError("Crosshair atanmamýþ!", this);
+        if (shelfSlots == null || shelfSlots.Length == 0) Debug.LogError("ShelfSlots atanmamýþ!", this);
+        shelf = GameObject.FindWithTag("Shelf");
+        if (shelf == null) Debug.LogError("Shelf tag’lý obje bulunamadý!", this);
+        pickupLayer = LayerMask.GetMask("Pickup");
+    }
+
+    private void Update()
+    {
+        HandleInput();
+        UpdateHeldObjectPosition();
+        HighlightObjectUnderMouse();
+        UpdateCrosshairVisibility();
+    }
+
+    private void HandleInput()
+    {
+        if (Input.GetMouseButtonDown(0)) // Sol týk
         {
             if (heldObject == null)
             {
+                // El boþsa yerden veya kargo kutusundan obje al
                 TryPickupObject();
+                if (heldObject == null) TryPickupFromCargoBox();
             }
             else
             {
-                DropObject();
+                // Elde obje varsa rafa veya kargo kutusuna yerleþtir
+                if (IsNearShelf())
+                {
+                    TryPlaceObjectOnShelf();
+                }
+                else if (IsNearCargoBox(out CargoBox cargoBox))
+                {
+                    TryPlaceObjectInCargoBox(cargoBox);
+                }
+                else
+                {
+                    DropObject();
+                }
             }
         }
-
-        UpdateHeldObjectPosition();
     }
 
-    // Ürünü elde tutulan pozisyona yumuþakça geçiþ yapar
     private void UpdateHeldObjectPosition()
     {
-        if (heldObject != null && holdPosition != null)
-        {
-            heldObject.transform.position = Vector3.Lerp(
-                heldObject.transform.position,
-                holdPosition.position,
-                Time.deltaTime * 20f);
+        if (heldObject == null || holdPosition == null) return;
 
-            heldObject.transform.rotation = holdPosition.rotation;
+        heldObject.transform.position = Vector3.Lerp(
+            heldObject.transform.position,
+            holdPosition.position,
+            Time.deltaTime * lerpSpeed);
+
+        heldObject.transform.rotation = Quaternion.Lerp(
+            heldObject.transform.rotation,
+            holdPosition.rotation,
+            Time.deltaTime * lerpSpeed);
+    }
+
+    private void UpdateCrosshairVisibility()
+    {
+        if (crosshair != null)
+        {
+            crosshair.SetActive(heldObject == null);
         }
     }
 
-    // Ürünü almayý dener
-    void TryPickupObject()
+    private void HighlightObjectUnderMouse()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
+        if (mainCamera == null) return;
 
-        if (Physics.Raycast(ray, out hit, 5.0f))
+        Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
+        Ray ray = mainCamera.ScreenPointToRay(screenCenter);
+        bool hitSomething = Physics.Raycast(ray, out RaycastHit hit, pickupDistance, pickupLayer);
+
+        GameObject newHighlightedObject = null;
+        if (hitSomething)
         {
-            if (hit.collider.gameObject.CompareTag("Pickup"))
+            GameObject hitObject = hit.collider.gameObject;
+            if (hitObject.CompareTag("Pickup") && hitObject != heldObject)
             {
-                heldObject = hit.collider.gameObject;
+                newHighlightedObject = hitObject;
+            }
+        }
 
-                // Ürünü holdPosition altýnda parent olarak ayarla
-                heldObject.transform.SetParent(holdPosition);
+        if (newHighlightedObject != highlightedObject)
+        {
+            if (highlightedObject != null && newHighlightedObject == null)
+            {
+                RemoveHighlight();
+            }
+            else if (newHighlightedObject != null && !isHighlighted)
+            {
+                highlightedObject = newHighlightedObject;
+                ApplyHighlight(highlightedObject);
+            }
+        }
+    }
 
-                // Rigidbody'yi ayarla
-                Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-                if (rb != null)
+    private void ApplyHighlight(GameObject obj)
+    {
+        if (obj == null) return;
+
+        Renderer renderer = obj.GetComponent<Renderer>();
+        if (renderer == null) return;
+
+        originalColor = renderer.material.color;
+        renderer.material.color = highlightColor;
+        isHighlighted = true;
+    }
+
+    private void RemoveHighlight()
+    {
+        if (highlightedObject == null) return;
+
+        Renderer renderer = highlightedObject.GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            renderer.material.color = originalColor;
+        }
+        highlightedObject = null;
+        isHighlighted = false;
+    }
+
+    private void TryPickupObject()
+    {
+        if (mainCamera == null) return;
+
+        Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
+        Ray ray = mainCamera.ScreenPointToRay(screenCenter);
+        if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, pickupLayer))
+        {
+            GameObject targetObject = hit.collider.gameObject;
+            if (!targetObject.CompareTag("Pickup")) return;
+
+            heldObject = targetObject;
+            RemoveHighlight();
+            SetupHeldObject(heldObject);
+            Debug.Log($"Alýndý: {heldObject.name}");
+        }
+    }
+
+    private void TryPickupFromCargoBox()
+    {
+        if (mainCamera == null) return;
+
+        Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
+        Ray ray = mainCamera.ScreenPointToRay(screenCenter);
+        Collider[] hits = Physics.OverlapSphere(mainCamera.transform.position, pickupDistance);
+        foreach (Collider hit in hits)
+        {
+            if (hit.CompareTag("CargoBox"))
+            {
+                CargoBox cargoBox = hit.GetComponent<CargoBox>();
+                if (cargoBox != null)
                 {
-                    rb.isKinematic = true; // Ürünün fiziksel olarak yere düþmesini engelle
+                    Product product = cargoBox.TryRemoveProduct(ray.origin, ray.direction, pickupDistance);
+                    if (product != null)
+                    {
+                        heldObject = product.gameObject;
+                        SetupHeldObject(heldObject);
+                        Debug.Log($"Kargo kutusundan alýndý: {heldObject.name}");
+                        break;
+                    }
                 }
-
-                // Product'ý bilgilendir
-                Product product = heldObject.GetComponent<Product>();
-                if (product != null)
-                {
-                    product.OnPickedUp();
-                }
-
-                Debug.Log($"Picked up: {heldObject.name}");
             }
         }
     }
 
-    // Ürünü býrakýr
-    void DropObject()
+    private void SetupHeldObject(GameObject obj)
     {
-        if (heldObject != null)
+        if (obj == null || holdPosition == null) return;
+
+        obj.transform.SetParent(holdPosition);
+        obj.transform.localPosition = Vector3.zero;
+
+        if (obj.TryGetComponent(out Rigidbody rb))
         {
-            // Rigidbody'yi fiziksel etkileþime açýk hale getir
-            Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = false; // Ürün yere düþebilir hale gelsin
-                rb.velocity = Vector3.zero; // Hareket hýzýný sýfýrla
-                rb.angularVelocity = Vector3.zero; // Dönme hýzýný sýfýrla
-            }
+            rb.isKinematic = true;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
 
-            // Parent baðlantýsýný kaldýr ve dünya konumunda serbest býrak
-            heldObject.transform.SetParent(null, true); // Dünya konumunda serbest býrak (true kullanýlarak)
-            heldObject.transform.localPosition = heldObject.transform.position; // Mevcut pozisyonunu koru
-
-            // Product scriptindeki durumlarý güncelle
-            Product product = heldObject.GetComponent<Product>();
-            if (product != null)
-            {
-                product.isHeld = false; // Ürün artýk tutulmuyor
-                product.ResetPosition(); // Ürünün durumunu sýfýrla
-            }
-
-            Debug.Log($"Dropped: {heldObject.name}");
-            heldObject = null; // heldObject referansýný temizle
+        if (obj.TryGetComponent(out Product product))
+        {
+            product.OnPickedUp();
         }
     }
 
-    public GameObject GetHeldObject()
+    private void DropObject()
     {
-        return heldObject;
-    }
+        if (heldObject == null) return;
 
-    public void ClearHeldObject()
-    {
+        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        heldObject.transform.SetParent(null);
+        Debug.Log($"{heldObject.name} býrakýldý.");
+
+        if (heldObject.TryGetComponent(out Product product))
+        {
+            product.isHeld = false;
+            product.ResetPosition();
+        }
+
         heldObject = null;
     }
+
+    private void TryPlaceObjectOnShelf()
+    {
+        if (heldObject == null || shelf == null) return;
+
+        for (int i = 0; i < shelfSlots.Length; i++)
+        {
+            if (shelfSlots[i] != null && !IsSlotOccupied(shelfSlots[i]))
+            {
+                heldObject.transform.SetParent(shelf.transform);
+                heldObject.transform.position = shelfSlots[i].position;
+                heldObject.transform.rotation = shelfSlots[i].rotation;
+
+                if (heldObject.TryGetComponent(out Rigidbody rb))
+                {
+                    rb.isKinematic = true;
+                    rb.velocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                }
+
+                if (heldObject.TryGetComponent(out Product product))
+                {
+                    product.isHeld = false;
+                }
+
+                Debug.Log($"{heldObject.name} raf slotuna yerleþtirildi: {shelfSlots[i].name}");
+                heldObject = null;
+                return;
+            }
+        }
+        Debug.Log("Raf dolu, yerleþtirme yapýlamadý!");
+    }
+
+    private void TryPlaceObjectInCargoBox(CargoBox cargoBox)
+    {
+        if (heldObject == null || cargoBox == null) return;
+
+        if (heldObject.TryGetComponent(out Product product))
+        {
+            if (cargoBox.TryPlaceProduct(product))
+            {
+                heldObject = null; // El boþaltýlýr
+            }
+        }
+    }
+
+    private bool IsSlotOccupied(Transform slot)
+    {
+        Collider[] colliders = Physics.OverlapSphere(slot.position, 0.1f, pickupLayer);
+        foreach (Collider col in colliders)
+        {
+            if (col.CompareTag("Pickup") && col.gameObject != heldObject)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool IsNearShelf()
+    {
+        if (shelf == null) return false;
+
+        float distanceToShelf = Vector3.Distance(mainCamera.transform.position, shelf.transform.position);
+        return distanceToShelf <= shelfPlaceDistance;
+    }
+
+    private bool IsNearCargoBox(out CargoBox cargoBox)
+    {
+        cargoBox = null;
+        Collider[] hits = Physics.OverlapSphere(mainCamera.transform.position, cargoPlaceDistance);
+        foreach (Collider hit in hits)
+        {
+            if (hit.CompareTag("CargoBox"))
+            {
+                cargoBox = hit.GetComponent<CargoBox>();
+                if (cargoBox != null && !cargoBox.IsFull())
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public GameObject GetHeldObject() => heldObject;
+    public void ClearHeldObject() => heldObject = null;
 }

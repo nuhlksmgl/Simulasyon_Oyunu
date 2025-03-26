@@ -85,7 +85,7 @@ public class ComputerOrderSystem : MonoBehaviour
         }
         else
         {
-            Debug.Log("Yeterli ürün yok, en az 4 ürün satýþta olmalý.");
+            
         }
     }
 }

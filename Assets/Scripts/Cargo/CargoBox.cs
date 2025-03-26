@@ -6,17 +6,8 @@ public class CargoBox : MonoBehaviour
     public bool isLargeBox; // Büyük veya küçük kutu durumu
     public float detectionRadius = 3f; // Algılama mesafesi
     public Transform[] productSlots; // Ürünlerin yerleşeceği slotların referansları
-    public GameObject fullBoxPanel; // Kargo kutusu dolunca açılacak panel
 
     private List<Product> placedProducts = new List<Product>(); // Yerleştirilen ürünlerin listesi
-
-    void Start()
-    {
-        if (fullBoxPanel != null)
-        {
-            fullBoxPanel.SetActive(false); // Paneli başlangıçta kapalı yap
-        }
-    }
 
     // Ürünün kutuya yakın olup olmadığını kontrol eder
     public bool IsInRange(Vector3 productPosition)
@@ -30,15 +21,11 @@ public class CargoBox : MonoBehaviour
         if (placedProducts.Count >= productSlots.Length)
         {
             Debug.Log("Kargo kutusu dolu.");
-            if (fullBoxPanel != null)
-            {
-                fullBoxPanel.SetActive(true); // Paneli aç
-            }
             return false; // Kutu doluysa ürünü yerleştirme
         }
 
         // Ürünü boş slota yerleştir
-        int slotIndex = placedProducts.Count; // Mevcut ürün sayısı, yerleştirilecek slotu gösterir
+        int slotIndex = placedProducts.Count;
         Transform slot = productSlots[slotIndex];
 
         product.transform.SetParent(slot); // Ürünü slotun child'ı yap
@@ -48,15 +35,30 @@ public class CargoBox : MonoBehaviour
         placedProducts.Add(product); // Ürünü yerleştirilen ürünler listesine ekle
         Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildi.");
 
-        // Kargo kutusu dolmuşsa paneli aç
-        if (placedProducts.Count >= productSlots.Length)
+        return true;
+    }
+
+    // Kutudan bir ürünü geri almak için yöntem
+    public Product TryRemoveProduct(Vector3 rayOrigin, Vector3 rayDirection, float maxDistance)
+    {
+        Ray ray = new Ray(rayOrigin, rayDirection);
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance))
         {
-            if (fullBoxPanel != null)
+            Product product = hit.collider.GetComponent<Product>();
+            if (product != null && placedProducts.Contains(product))
             {
-                fullBoxPanel.SetActive(true);
+                placedProducts.Remove(product); // Listeden çıkar
+                product.transform.SetParent(null); // Slotun parent'lığından çıkar
+                Debug.Log($"{product.gameObject.name} kargo kutusundan alındı.");
+                return product;
             }
         }
+        return null;
+    }
 
-        return true;
+    // Kutunun dolu olup olmadığını kontrol eder
+    public bool IsFull()
+    {
+        return placedProducts.Count >= productSlots.Length;
     }
 }

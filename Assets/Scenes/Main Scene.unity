@@ -2008,7 +2008,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -4947,7 +4948,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -5295,41 +5297,54 @@ MonoBehaviour:
   - productName: Coffe Machine
     price: 50
     productPrefab: {fileID: 4465601864227593010}
+    quantity: 0
   - productName: DayFit Dumbell
     price: 0
     productPrefab: {fileID: 3717023936322910448}
+    quantity: 0
   - productName: Moneydoly
     price: 0
     productPrefab: {fileID: 2135957236604885478}
+    quantity: 0
   - productName: Harley Termos
     price: 25
     productPrefab: {fileID: 6511448366392658136}
+    quantity: 0
   - productName: MJI Drone
     price: 0
     productPrefab: {fileID: 2875868376948516028}
+    quantity: 0
   - productName: MBOX Game Console
     price: 0
     productPrefab: {fileID: 3333498884928125759}
+    quantity: 0
   - productName: M Tech Headset
     price: 0
     productPrefab: {fileID: 5978811263465258783}
+    quantity: 0
   - productName: Style Pen
     price: 0
     productPrefab: {fileID: 6446824646620777110}
+    quantity: 0
   - productName: JLB Speakers
     price: 0
     productPrefab: {fileID: 4861891700206538061}
+    quantity: 0
   - productName: Surf Toy Gun
     price: 10
     productPrefab: {fileID: 354952115917956834}
+    quantity: 0
   - productName: View Hero
     price: 0
     productPrefab: {fileID: 7043197203342792971}
+    quantity: 0
   - productName: Swift Game Console
     price: 0
     productPrefab: {fileID: 8700641823614131961}
+    quantity: 0
   spawnPoint: {fileID: 1284598402}
   playerBalance: {fileID: 1340144451}
+  sellPanel: {fileID: 0}
 --- !u!1 &851195309
 GameObject:
   m_ObjectHideFlags: 0
@@ -7642,7 +7657,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -7985,6 +8001,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   holdPosition: {fileID: 42731202}
+  pickupDistance: 5
+  lerpSpeed: 20
+  outlineMaterial: {fileID: 0}
 --- !u!114 &1340144451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13179,6 +13198,7 @@ MonoBehaviour:
   - {fileID: 1332255457}
   - {fileID: 366297302}
   - {fileID: 558110146}
+  fullBoxPanel: {fileID: 0}
 --- !u!1 &6264406096550085294
 GameObject:
   m_ObjectHideFlags: 0
@@ -13782,6 +13802,7 @@ MonoBehaviour:
   - {fileID: 790540065}
   - {fileID: 226964553}
   - {fileID: 1599199900}
+  fullBoxPanel: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

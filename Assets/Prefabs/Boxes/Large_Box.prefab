@@ -13,9 +13,10 @@ GameObject:
   - component: {fileID: 6661393495843026115}
   - component: {fileID: 3025132648597785974}
   - component: {fileID: 8797050817895211185}
+  - component: {fileID: 2413911483748867317}
   m_Layer: 0
   m_Name: Large_Box
-  m_TagString: Untagged
+  m_TagString: CargoBox
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -134,3 +135,18 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &2413911483748867317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1278117868954368531}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6390d482510f204ea0f37811a717b7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isLargeBox: 0
+  detectionRadius: 3
+  productSlots: []

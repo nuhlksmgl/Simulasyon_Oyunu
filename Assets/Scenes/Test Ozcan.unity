@@ -3027,6 +3027,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   holdPosition: {fileID: 42731202}
+  pickupDistance: 5
+  lerpSpeed: 20
+  outlineMaterial: {fileID: 0}
 --- !u!1 &1346972826
 GameObject:
   m_ObjectHideFlags: 0
@@ -4211,6 +4214,7 @@ MonoBehaviour:
   - {fileID: 1332255457}
   - {fileID: 366297302}
   - {fileID: 558110146}
+  fullBoxPanel: {fileID: 0}
 --- !u!1 &6446824646620777110 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6446824646359472849, guid: d1012e8249256dc4dacb4287130652d1, type: 3}
@@ -4372,6 +4376,7 @@ MonoBehaviour:
   - {fileID: 790540065}
   - {fileID: 226964553}
   - {fileID: 1599199900}
+  fullBoxPanel: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

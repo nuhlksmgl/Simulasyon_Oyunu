@@ -7,6 +7,7 @@ TagManager:
   - Pickup
   - Interactable
   - BuyButton
+  - Shelf
   layers:
   - Default
   - TransparentFX
@@ -16,8 +17,8 @@ TagManager:
   - UI
   - Ground
   - Interactable
-  - 
-  - 
+  - Pickup
+  - Shelf
   - 
   - 
   - 
