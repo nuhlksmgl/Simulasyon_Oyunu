@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &9013443591587980889
+--- !u!1 &352390974250418652
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,49 +8,50 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8374704587115529581}
-  - component: {fileID: 2411897819231805329}
-  - component: {fileID: 2178031571410121451}
-  - component: {fileID: 5485909146839004687}
-  - component: {fileID: 9146379023793633631}
-  - component: {fileID: 8378033886717920807}
-  m_Layer: 8
-  m_Name: Large_Products
-  m_TagString: Pickup
+  - component: {fileID: 7748213666832287490}
+  - component: {fileID: 3218057684355673281}
+  - component: {fileID: 2599588838480117329}
+  - component: {fileID: 1539373812130469981}
+  - component: {fileID: 4069619783731089161}
+  - component: {fileID: 6826622165475324554}
+  m_Layer: 0
+  m_Name: Large_Small_Open_Box
+  m_TagString: CargoBox
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8374704587115529581
+--- !u!4 &7748213666832287490
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9013443591587980889}
+  m_GameObject: {fileID: 352390974250418652}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.7071068, z: -0, w: -0.7071068}
-  m_LocalPosition: {x: 20.265001, y: -1.5519999, z: 101.895996}
-  m_LocalScale: {x: 186.42854, y: 153.16225, z: 185.93246}
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 16.454, y: -3.111, z: 63.956}
+  m_LocalScale: {x: 88.953415, y: 84.84, z: 120.2719}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 4309907974469323046}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 270, z: 0}
---- !u!33 &2411897819231805329
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+--- !u!33 &3218057684355673281
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9013443591587980889}
-  m_Mesh: {fileID: -5764812735813907952, guid: d1012e8249256dc4dacb4287130652d1, type: 3}
---- !u!23 &2178031571410121451
+  m_GameObject: {fileID: 352390974250418652}
+  m_Mesh: {fileID: 2395249144980697767, guid: d1012e8249256dc4dacb4287130652d1, type: 3}
+--- !u!23 &2599588838480117329
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9013443591587980889}
+  m_GameObject: {fileID: 352390974250418652}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -64,7 +65,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 78f965c1f3b77824f8e08d0646ce6055, type: 2}
+  - {fileID: 2100000, guid: 57daa15eec541934eb5b8a3293771f55, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -86,13 +87,13 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &5485909146839004687
+--- !u!64 &1539373812130469981
 MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9013443591587980889}
+  m_GameObject: {fileID: 352390974250418652}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -107,14 +108,14 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: -5764812735813907952, guid: d1012e8249256dc4dacb4287130652d1, type: 3}
---- !u!54 &9146379023793633631
+  m_Mesh: {fileID: 2395249144980697767, guid: d1012e8249256dc4dacb4287130652d1, type: 3}
+--- !u!54 &4069619783731089161
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9013443591587980889}
+  m_GameObject: {fileID: 352390974250418652}
   serializedVersion: 4
   m_Mass: 1
   m_Drag: 0
@@ -131,21 +132,54 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 2
---- !u!114 &8378033886717920807
+  m_CollisionDetection: 0
+--- !u!114 &6826622165475324554
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9013443591587980889}
+  m_GameObject: {fileID: 352390974250418652}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
+  m_Script: {fileID: 11500000, guid: e6390d482510f204ea0f37811a717b7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isPlaced: 0
-  isHeld: 0
+  isLargeBox: 1
+  detectionRadius: 3
+  productSlots:
+  - {fileID: 4309907974469323046}
+--- !u!1 &3271905315364388847
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4309907974469323046}
+  m_Layer: 8
+  m_Name: Slot1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4309907974469323046
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3271905315364388847}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.70710176, y: 0.0026752364, z: 0.0026752364, w: -0.70710176}
+  m_LocalPosition: {x: 0, y: -0.00050000753, z: -0.000590001}
+  m_LocalScale: {x: 2.0958056, y: 1.2734663, z: 2.191559}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7748213666832287490}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

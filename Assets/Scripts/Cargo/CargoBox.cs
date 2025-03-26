@@ -3,42 +3,49 @@ using System.Collections.Generic;
 
 public class CargoBox : MonoBehaviour
 {
-    public bool isLargeBox; // Büyük veya küçük kutu durumu
-    public float detectionRadius = 3f; // Algılama mesafesi
-    public Transform[] productSlots; // Ürünlerin yerleşeceği slotların referansları
+    public bool isLargeBox;
+    public float detectionRadius = 3f;
+    public Transform[] productSlots;
 
-    private List<Product> placedProducts = new List<Product>(); // Yerleştirilen ürünlerin listesi
+    private List<Product> placedProducts = new List<Product>();
 
-    // Ürünün kutuya yakın olup olmadığını kontrol eder
     public bool IsInRange(Vector3 productPosition)
     {
         return Vector3.Distance(transform.position, productPosition) <= detectionRadius;
     }
 
-    // Ürünü kutuya yerleştirmeyi dener
     public bool TryPlaceProduct(Product product)
     {
         if (placedProducts.Count >= productSlots.Length)
         {
             Debug.Log("Kargo kutusu dolu.");
-            return false; // Kutu doluysa ürünü yerleştirme
+            return false;
         }
 
-        // Ürünü boş slota yerleştir
         int slotIndex = placedProducts.Count;
         Transform slot = productSlots[slotIndex];
 
-        product.transform.SetParent(slot); // Ürünü slotun child'ı yap
-        product.transform.localPosition = Vector3.zero; // Slotun pozisyonuna göre yerleştir
-        product.transform.localRotation = Quaternion.identity; // Slotun yönüyle hizala
+        Rigidbody rb = product.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
 
-        placedProducts.Add(product); // Ürünü yerleştirilen ürünler listesine ekle
+        // Ürünü slota yerleştir, rotasyonu sabitle
+        product.transform.SetParent(slot);
+        product.transform.position = slot.position;
+        product.transform.rotation = Quaternion.Euler(0, 0, 0); // Rotasyonu sıfırla (siparişle gelenler gibi)
+
+        Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildikten sonra rotasyon: {product.transform.rotation.eulerAngles}");
+
+        placedProducts.Add(product);
         Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildi.");
 
         return true;
     }
 
-    // Kutudan bir ürünü geri almak için yöntem
     public Product TryRemoveProduct(Vector3 rayOrigin, Vector3 rayDirection, float maxDistance)
     {
         Ray ray = new Ray(rayOrigin, rayDirection);
@@ -47,8 +54,8 @@ public class CargoBox : MonoBehaviour
             Product product = hit.collider.GetComponent<Product>();
             if (product != null && placedProducts.Contains(product))
             {
-                placedProducts.Remove(product); // Listeden çıkar
-                product.transform.SetParent(null); // Slotun parent'lığından çıkar
+                placedProducts.Remove(product);
+                product.transform.SetParent(null);
                 Debug.Log($"{product.gameObject.name} kargo kutusundan alındı.");
                 return product;
             }
@@ -56,7 +63,6 @@ public class CargoBox : MonoBehaviour
         return null;
     }
 
-    // Kutunun dolu olup olmadığını kontrol eder
     public bool IsFull()
     {
         return placedProducts.Count >= productSlots.Length;

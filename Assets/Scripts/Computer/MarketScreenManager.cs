@@ -2,31 +2,52 @@ using UnityEngine;
 
 public class MarketScreenManager : MonoBehaviour
 {
-    public GameObject mainMenu;  // Ana ekran paneli
-    public GameObject buyPanel; // Satýn alma ekraný
-    public GameObject sellPanel; // Satýþ ekraný
+    public GameObject mainMenu;
+    public GameObject buyPanel;
+    public GameObject sellPanel;
+    public InGameMarket inGameMarket;
 
-    // Ana menüyü göster
+    void Start()
+    {
+        // Oyun baþladýðýnda fareyi gizle ve kilitle (isteðe baðlý)
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+    }
+
     public void ShowMainMenu()
     {
         mainMenu.SetActive(true);
         buyPanel.SetActive(false);
         sellPanel.SetActive(false);
+        Cursor.visible = true; // Canvas açýkken fare görünür
+        Cursor.lockState = CursorLockMode.None;
     }
 
-    // Satýn alma ekranýný göster
     public void ShowBuyPanel()
     {
         mainMenu.SetActive(false);
         buyPanel.SetActive(true);
         sellPanel.SetActive(false);
+        Cursor.visible = true; // Canvas açýkken fare görünür
+        Cursor.lockState = CursorLockMode.None;
     }
 
-    // Satýþ ekranýný göster
     public void ShowSellPanel()
     {
         mainMenu.SetActive(false);
         buyPanel.SetActive(false);
         sellPanel.SetActive(true);
+        Cursor.visible = true; // Canvas açýkken fare görünür
+        Cursor.lockState = CursorLockMode.None;
+    }
+
+    public void CloseCanvas()
+    {
+        mainMenu.SetActive(false);
+        buyPanel.SetActive(false);
+        sellPanel.SetActive(false);
+        inGameMarket.ProcessOrders(); // Sipariþleri iþle
+        Cursor.visible = false; // Canvas kapandýðýnda fareyi gizle
+        Cursor.lockState = CursorLockMode.Locked; // Fareyi kilitle
     }
 }

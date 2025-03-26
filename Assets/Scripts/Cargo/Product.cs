@@ -3,25 +3,25 @@
 public class Product : MonoBehaviour
 {
     private ObjectPickup objectPickup;
-    private bool isPlaced = false;
-    public bool isHeld = false; // �r�n�n tutulup tutulmad���n� takip eden de�i�ken
+    public bool isPlaced = false; // Erişilebilir hale getirdik
+    public bool isHeld = false;   // Ürün tutulup tutulmadığını takip eden değişken
 
     private void Start()
     {
         objectPickup = FindObjectOfType<ObjectPickup>();
-        gameObject.tag = "Pickup"; // �r�n�n etiketini "Pickup" yapar
+        gameObject.tag = "Pickup"; // Ürünün etiketini "Pickup" yapar
     }
 
     private void Update()
     {
-        // �r�n elde tutuluyorsa ve 'F' tu�una bas�ld�ysa kargo kutusuna yerle�tir
+        // Ürün elde tutuluyorsa ve 'F' tuşuna basıldığında kargo kutusuna yerleştir
         if (!isPlaced && isHeld && objectPickup != null && objectPickup.GetHeldObject() == gameObject && Input.GetKeyDown(KeyCode.F))
         {
             TryPlaceInBox();
         }
     }
 
-    // �r�n� kargo kutusuna yerle�tirmeyi dener
+    // Ürünü kargo kutusuna yerleştirmeyi dener
     private void TryPlaceInBox()
     {
         CargoBox[] boxes = FindObjectsOfType<CargoBox>();
@@ -32,22 +32,22 @@ public class Product : MonoBehaviour
                 isPlaced = true;
                 isHeld = false;
                 objectPickup.ClearHeldObject();
-                Debug.Log($"{gameObject.name} kargo kutusuna yerle�tirildi.");
+                Debug.Log($"{gameObject.name} kargo kutusuna yerleştirildi.");
                 break;
             }
         }
 
         if (!isPlaced)
         {
-            Debug.Log($"{gameObject.name} kutuya yerle�tirilemedi.");
+            Debug.Log($"{gameObject.name} kutuya yerleştirilemedi.");
         }
     }
 
     public void OnPickedUp()
     {
-        isHeld = true; // �r�n al�nd�
+        isHeld = true; // Ürün alındı
         isPlaced = false;
-        Debug.Log($"{gameObject.name} al�nd�.");
+        Debug.Log($"{gameObject.name} alındı.");
     }
 
     public void ResetPosition()
@@ -56,5 +56,3 @@ public class Product : MonoBehaviour
         isHeld = false;
     }
 }
-
-// Rigidbody'yi fiziksel etkile�ime

@@ -5,34 +5,55 @@ using System.Collections.Generic;
 public class InGameMarket : MonoBehaviour
 {
     [System.Serializable]
-    public class Product
+    public class MarketProduct
     {
-        public string productName; // Ürün adý
-        public int price;          // Ürün fiyatý
-        public GameObject productPrefab; // 3D model prefabý
-        public int quantity = 0;   // Ürün miktarý
+        public string productName;
+        public int price;
+        public GameObject productPrefab;
+        public int quantity = 0;
+        public bool isLarge;
     }
 
-    public Product[] products; // Ürün listesi
-    public Transform spawnPoint; // Satýn alýnan ürünü spawn edeceðimiz nokta
-    public PlayerBalance playerBalance; // PlayerBalance script'i referansý
-    public SellPanel sellPanel; // SellPanel script referansý
+    [System.Serializable]
+    public class OrderItem
+    {
+        public MarketProduct product;
+        public int quantity;
+    }
+
+    public MarketProduct[] products;
+    public Transform spawnPoint;
+    public Transform[] spawnSlots;
+    public PlayerBalance playerBalance;
+    public SellPanel sellPanel;
+
+    [Header("Small Cargo Boxes")]
+    public GameObject smallBox1Slot;
+    public GameObject smallBox2Slots;
+    public GameObject smallBox3to4Slots;
+
+    [Header("Large Cargo Boxes")]
+    public GameObject largeBox1Slot;
+    public GameObject largeBox2Slots;
+    public GameObject largeBox3to4Slots;
+
+    private List<GameObject> spawnedBoxes = new List<GameObject>();
+    private List<OrderItem> orderBasket = new List<OrderItem>();
 
     void Start()
     {
         Button[] buttons = GetComponentsInChildren<Button>();
         for (int i = 0; i < buttons.Length; i++)
         {
-            int index = i; // Lambda closure hatasýný önlemek için index kopyasý
-
-            if (buttons[i].CompareTag("BuyButton")) // Sadece BuyButton tag'ine sahip butonlar için
+            int index = i;
+            if (buttons[i].CompareTag("BuyButton"))
             {
-                buttons[i].onClick.AddListener(() => BuyProduct(index));
+                buttons[i].onClick.AddListener(() => AddToBasket(index));
             }
         }
     }
 
-    void BuyProduct(int productIndex)
+    public void AddToBasket(int productIndex)
     {
         if (productIndex < 0 || productIndex >= products.Length)
         {
@@ -40,14 +61,24 @@ public class InGameMarket : MonoBehaviour
             return;
         }
 
-        Product product = products[productIndex];
+        MarketProduct product = products[productIndex];
+        int quantityToBuy = 1;
+        int totalPrice = product.price * quantityToBuy;
 
-        if (playerBalance.DeductBalance(product.price))
+        if (playerBalance.DeductBalance(totalPrice))
         {
-            Debug.Log($"{product.productName} satýn alýndý!");
-            Instantiate(product.productPrefab, spawnPoint.position, Quaternion.identity);
-            product.quantity++;
-            sellPanel.UpdateSellPanel(); // Satýn alma sonrasý satýþ panelini güncelle
+            Debug.Log($"{quantityToBuy} adet {product.productName} sepete eklendi!");
+            OrderItem existingOrder = orderBasket.Find(o => o.product == product);
+            if (existingOrder != null)
+            {
+                existingOrder.quantity += quantityToBuy;
+            }
+            else
+            {
+                orderBasket.Add(new OrderItem { product = product, quantity = quantityToBuy });
+            }
+            product.quantity += quantityToBuy;
+            sellPanel.UpdateSellPanel();
         }
         else
         {
@@ -55,10 +86,116 @@ public class InGameMarket : MonoBehaviour
         }
     }
 
-    public List<Product> GetAvailableProducts()
+    public void ProcessOrders()
     {
-        List<Product> availableProducts = new List<Product>();
-        foreach (Product product in products)
+        foreach (OrderItem order in orderBasket)
+        {
+            SpawnProductInCargoBox(order.product, order.quantity);
+        }
+        orderBasket.Clear();
+    }
+
+    void SpawnProductInCargoBox(MarketProduct product, int quantity)
+    {
+        GameObject cargoBoxPrefab = SelectCargoBox(product.isLarge, quantity);
+        if (cargoBoxPrefab == null)
+        {
+            Debug.LogError("Uygun kargo kutusu bulunamadý!");
+            return;
+        }
+
+        int slotIndex = GetAvailableSlotIndex();
+        if (slotIndex == -1)
+        {
+            Debug.LogWarning("Boþ slot yok, kutu spawn edilemedi!");
+            return;
+        }
+
+        Vector3 spawnPosition = spawnSlots[slotIndex].position;
+        Quaternion spawnRotation = cargoBoxPrefab.transform.rotation;
+        GameObject cargoBoxInstance = Instantiate(cargoBoxPrefab, spawnPosition, spawnRotation);
+        CargoBox cargoBox = cargoBoxInstance.GetComponent<CargoBox>();
+
+        if (cargoBox == null)
+        {
+            Debug.LogError("Kargo kutusunda CargoBox scripti eksik!");
+            Destroy(cargoBoxInstance);
+            return;
+        }
+
+        Vector3 prefabScale = product.productPrefab.transform.localScale; // Prefabýn orijinal ölçeði
+        Debug.Log($"{product.productName} prefab ölçeði: {prefabScale}");
+
+        for (int i = 0; i < quantity; i++)
+        {
+            GameObject productInstance = Instantiate(product.productPrefab, spawnPosition, product.productPrefab.transform.rotation);
+            productInstance.transform.localScale = prefabScale; // Prefabýn orijinal ölçeðini uygula
+            Debug.Log($"{product.productName} spawn olduktan sonra ölçek: {productInstance.transform.localScale}");
+
+            Product productComponent = productInstance.GetComponent<Product>();
+            if (productComponent != null)
+            {
+                if (cargoBox.TryPlaceProduct(productComponent))
+                {
+                    productComponent.isHeld = false;
+                    productComponent.isPlaced = true;
+                }
+                else
+                {
+                    Debug.LogError("Ürün kargo kutusuna yerleþtirilemedi!");
+                    Destroy(productInstance);
+                }
+            }
+            else
+            {
+                Debug.LogError($"{product.productName} prefabýnda Product scripti eksik!");
+                Destroy(productInstance);
+            }
+        }
+
+        spawnedBoxes.Add(cargoBoxInstance);
+    }
+
+    GameObject SelectCargoBox(bool isLarge, int quantity)
+    {
+        if (isLarge)
+        {
+            if (quantity == 1) return largeBox1Slot;
+            if (quantity == 2) return largeBox2Slots;
+            if (quantity >= 3 && quantity <= 4) return largeBox3to4Slots;
+        }
+        else
+        {
+            if (quantity == 1) return smallBox1Slot;
+            if (quantity == 2) return smallBox2Slots;
+            if (quantity >= 3 && quantity <= 4) return smallBox3to4Slots;
+        }
+        Debug.LogWarning("Desteklenmeyen miktar: " + quantity);
+        return null;
+    }
+
+    int GetAvailableSlotIndex()
+    {
+        for (int i = 0; i < spawnSlots.Length; i++)
+        {
+            bool isOccupied = false;
+            foreach (GameObject box in spawnedBoxes)
+            {
+                if (Vector3.Distance(box.transform.position, spawnSlots[i].position) < 0.1f)
+                {
+                    isOccupied = true;
+                    break;
+                }
+            }
+            if (!isOccupied) return i;
+        }
+        return -1;
+    }
+
+    public List<MarketProduct> GetAvailableProducts()
+    {
+        List<MarketProduct> availableProducts = new List<MarketProduct>();
+        foreach (MarketProduct product in products)
         {
             if (product.quantity > 0)
             {
