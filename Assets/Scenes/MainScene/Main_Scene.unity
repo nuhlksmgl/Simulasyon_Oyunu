@@ -78689,53 +78689,84 @@ MonoBehaviour:
     price: 50
     productPrefab: {fileID: 9013443591587980889, guid: 6564630affbfdcd4993c2c0adc221fab, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: DayFit Dumbell
     price: 25
     productPrefab: {fileID: 4943149190394174590, guid: 11c1abbbc22716345ab8ecee980496f2, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Moneydoly
     price: 10
     productPrefab: {fileID: 7103303819142608525, guid: 90f56a4e44453d3499379654ae179258, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Harley Termos
     price: 10
     productPrefab: {fileID: 1059213738805224098, guid: 0767bff7e5fe26342982e2d998ed9e8e, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: MJI Drone
     price: 10
     productPrefab: {fileID: 6910125235702809442, guid: b9b3c1077d8931240b9997840491e680, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: MBOX Game Console
     price: 10
     productPrefab: {fileID: 3931625060261406924, guid: a0e07711777ad8c43a301bc60f4f73d5, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: M Tech Headset
     price: 10
     productPrefab: {fileID: 4921327257524108906, guid: e1bc8655dec4a1f44ab85bd14d075053, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Style Pen
     price: 10
     productPrefab: {fileID: 7068894883041317099, guid: 6887146679b1e224c9c6b6acd38eb87f, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: JLB Speakers
     price: 10
     productPrefab: {fileID: 1180921624298648734, guid: d3c887176e56eb74eadf1c5cd3169477, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Surf Toy Gun
     price: 10
     productPrefab: {fileID: 8105012808300197839, guid: 393159cbb76cd584e90637d15a1a6a1e, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: View Hero
     price: 10
     productPrefab: {fileID: 6931257682826747847, guid: 77303e01848bf1541b52b666af9005af, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Swift Game Console
     price: 10
     productPrefab: {fileID: 3853126437583539925, guid: cb8cb139490613e45a6504904a7373db, type: 3}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   spawnPoint: {fileID: 1814470421}
+  spawnSlots: []
   playerBalance: {fileID: 1551678916}
   sellPanel: {fileID: 1123369977}
+  smallBox1Slot: {fileID: 0}
+  smallBox2Slots: {fileID: 0}
+  smallBox3to4Slots: {fileID: 0}
+  largeBox1Slot: {fileID: 0}
+  largeBox2Slots: {fileID: 0}
+  largeBox3to4Slots: {fileID: 0}
 --- !u!114 &1017593819
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106049,6 +106080,7 @@ MonoBehaviour:
   mainMenu: {fileID: 1142008083}
   buyPanel: {fileID: 1660833055}
   sellPanel: {fileID: 1123369973}
+  inGameMarket: {fileID: 0}
 --- !u!4 &1352873155
 Transform:
   m_ObjectHideFlags: 0
@@ -120226,7 +120258,11 @@ MonoBehaviour:
   holdPosition: {fileID: 518148736}
   pickupDistance: 5
   lerpSpeed: 20
-  outlineMaterial: {fileID: 0}
+  highlightColor: {r: 0, g: 1, b: 0, a: 1}
+  crosshair: {fileID: 0}
+  shelfSlots: []
+  shelfPlaceDistance: 2
+  cargoPlaceDistance: 2
 --- !u!114 &1551678920
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -3289,6 +3289,7 @@ MonoBehaviour:
   mainMenu: {fileID: 838570110}
   buyPanel: {fileID: 823150387}
   sellPanel: {fileID: 2020006555}
+  inGameMarket: {fileID: 0}
 --- !u!4 &688231953
 Transform:
   m_ObjectHideFlags: 0
@@ -5298,53 +5299,84 @@ MonoBehaviour:
     price: 50
     productPrefab: {fileID: 4465601864227593010}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: DayFit Dumbell
     price: 0
     productPrefab: {fileID: 3717023936322910448}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Moneydoly
     price: 0
     productPrefab: {fileID: 2135957236604885478}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Harley Termos
     price: 25
     productPrefab: {fileID: 6511448366392658136}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: MJI Drone
     price: 0
     productPrefab: {fileID: 2875868376948516028}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: MBOX Game Console
     price: 0
     productPrefab: {fileID: 3333498884928125759}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: M Tech Headset
     price: 0
     productPrefab: {fileID: 5978811263465258783}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Style Pen
     price: 0
     productPrefab: {fileID: 6446824646620777110}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: JLB Speakers
     price: 0
     productPrefab: {fileID: 4861891700206538061}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Surf Toy Gun
     price: 10
     productPrefab: {fileID: 354952115917956834}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: View Hero
     price: 0
     productPrefab: {fileID: 7043197203342792971}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   - productName: Swift Game Console
     price: 0
     productPrefab: {fileID: 8700641823614131961}
     quantity: 0
+    isLarge: 0
+    priceText: {fileID: 0}
   spawnPoint: {fileID: 1284598402}
+  spawnSlots: []
   playerBalance: {fileID: 1340144451}
   sellPanel: {fileID: 0}
+  smallBox1Slot: {fileID: 0}
+  smallBox2Slots: {fileID: 0}
+  smallBox3to4Slots: {fileID: 0}
+  largeBox1Slot: {fileID: 0}
+  largeBox2Slots: {fileID: 0}
+  largeBox3to4Slots: {fileID: 0}
 --- !u!1 &851195309
 GameObject:
   m_ObjectHideFlags: 0
@@ -8003,7 +8035,11 @@ MonoBehaviour:
   holdPosition: {fileID: 42731202}
   pickupDistance: 5
   lerpSpeed: 20
-  outlineMaterial: {fileID: 0}
+  highlightColor: {r: 0, g: 1, b: 0, a: 1}
+  crosshair: {fileID: 0}
+  shelfSlots: []
+  shelfPlaceDistance: 2
+  cargoPlaceDistance: 2
 --- !u!114 &1340144451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12898,6 +12934,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!1 &5114242084266218862
 GameObject:
@@ -13081,6 +13118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!23 &5935609945144069339
 MeshRenderer:
@@ -13157,6 +13195,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!1 &6000753835752173637
 GameObject:
@@ -13198,7 +13237,6 @@ MonoBehaviour:
   - {fileID: 1332255457}
   - {fileID: 366297302}
   - {fileID: 558110146}
-  fullBoxPanel: {fileID: 0}
 --- !u!1 &6264406096550085294
 GameObject:
   m_ObjectHideFlags: 0
@@ -13317,6 +13355,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!23 &6701163517072468762
 MeshRenderer:
@@ -13372,6 +13411,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!4 &6748577801312209816
 Transform:
@@ -13471,6 +13511,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!33 &7132103509370228338
 MeshFilter:
@@ -13507,6 +13548,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!33 &7164884149796293123
 MeshFilter:
@@ -13528,6 +13570,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!33 &7591752565595289895
 MeshFilter:
@@ -13638,6 +13681,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!1 &8548923000980855992
 GameObject:
@@ -13691,6 +13735,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!23 &8733468399848656034
 MeshRenderer:
@@ -13746,6 +13791,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!4 &9035824792195669344
 Transform:
@@ -13774,6 +13820,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaced: 0
   isHeld: 0
 --- !u!33 &9147627953850135590
 MeshFilter:
@@ -13802,7 +13849,6 @@ MonoBehaviour:
   - {fileID: 790540065}
   - {fileID: 226964553}
   - {fileID: 1599199900}
-  fullBoxPanel: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
