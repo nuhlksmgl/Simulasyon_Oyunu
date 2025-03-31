@@ -219,18 +219,20 @@ public class ObjectPickup : MonoBehaviour
         Rigidbody rb = heldObject.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.isKinematic = false;
+            // Önce velocity ve angularVelocity sýfýrlanýr, sonra isKinematic deðiþtirilir
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = false;
         }
 
         heldObject.transform.SetParent(null);
-        Debug.Log($"{heldObject.name} býrakýldý.");
+        Debug.Log($"{heldObject.name} býrakýldý. Pozisyon: {heldObject.transform.position}");
 
         if (heldObject.TryGetComponent(out Product product))
         {
             product.isHeld = false;
             product.ResetPosition();
+            Debug.Log($"{heldObject.name} ResetPosition sonrasý pozisyon: {heldObject.transform.position}");
         }
 
         heldObject = null;
@@ -250,9 +252,10 @@ public class ObjectPickup : MonoBehaviour
 
                 if (heldObject.TryGetComponent(out Rigidbody rb))
                 {
-                    rb.isKinematic = true;
+                    // Önce velocity ve angularVelocity sýfýrlanýr, sonra isKinematic true yapýlýr
                     rb.velocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
+                    rb.isKinematic = true;
                 }
 
                 if (heldObject.TryGetComponent(out Product product))
@@ -260,7 +263,7 @@ public class ObjectPickup : MonoBehaviour
                     product.isHeld = false;
                 }
 
-                Debug.Log($"{heldObject.name} raf slotuna yerleþtirildi: {shelfSlots[i].name}");
+                Debug.Log($"{heldObject.name} raf slotuna yerleþtirildi: {shelfSlots[i].name}, Pozisyon: {heldObject.transform.position}");
                 heldObject = null;
                 return;
             }
