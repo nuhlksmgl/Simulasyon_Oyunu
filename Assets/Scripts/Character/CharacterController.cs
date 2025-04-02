@@ -70,6 +70,10 @@ public class FirstPersonController : MonoBehaviour
         {
             Debug.LogError("Player Camera bulunamadý! Lütfen karakterin child’ý olarak bir Camera ekleyin.");
         }
+        else
+        {
+            Debug.Log($"Player Camera bulundu: {playerCamera.name}, Local Position: {playerCamera.transform.localPosition}");
+        }
 
         // Camera Reference kontrolü
         if (cameraReference == null)
@@ -80,6 +84,17 @@ public class FirstPersonController : MonoBehaviour
         {
             // Kameranýn varsayýlan local pozisyonunu referans noktasýndan al
             defaultCameraLocalPos = cameraReference.localPosition;
+            Debug.Log($"Camera Reference bulundu: {cameraReference.name}, Local Position: {defaultCameraLocalPos}");
+        }
+
+        // Ground Check kontrolü
+        if (groundCheck == null)
+        {
+            Debug.LogError("Ground Check atanmamýþ! Lütfen Inspector’da Ground Check objesini ayarlayýn.");
+        }
+        else
+        {
+            Debug.Log($"Ground Check bulundu: {groundCheck.name}, Local Position: {groundCheck.localPosition}, World Position: {groundCheck.position}");
         }
 
         // Lock cursor for FPS control
@@ -102,7 +117,15 @@ public class FirstPersonController : MonoBehaviour
     private void HandleGroundCheck()
     {
         // Check if player is grounded using a sphere cast
+        if (groundCheck == null)
+        {
+            Debug.LogWarning("Ground Check null, cannot check if grounded!");
+            isGrounded = false;
+            return;
+        }
+
         isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        Debug.Log($"Is Grounded: {isGrounded}, Ground Check Position: {groundCheck.position}, Ground Distance: {groundDistance}, Ground Mask: {LayerMask.LayerToName(groundMask.value)}");
 
         // Reset vertical velocity when grounded
         if (isGrounded && velocity.y < 0)
@@ -116,6 +139,9 @@ public class FirstPersonController : MonoBehaviour
         // Get input axes
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
+
+        // Debug input
+        Debug.Log($"Movement Input - Horizontal: {x}, Vertical: {z}");
 
         // Create movement vector
         Vector3 move = transform.right * x + transform.forward * z;
@@ -155,7 +181,11 @@ public class FirstPersonController : MonoBehaviour
     private void HandleHeadBobbingAndFootsteps()
     {
         // Kameranýn null olup olmadýðýný kontrol et
-        if (playerCamera == null || cameraReference == null) return;
+        if (playerCamera == null || cameraReference == null)
+        {
+            Debug.LogWarning("Head Bobbing çalýþmýyor! playerCamera veya cameraReference null.");
+            return;
+        }
 
         // Hareket vektörünü al
         float x = Input.GetAxis("Horizontal");
@@ -163,6 +193,8 @@ public class FirstPersonController : MonoBehaviour
         Vector3 moveInput = new Vector3(x, 0f, z);
         bool isMoving = moveInput.magnitude > 0.1f && isGrounded;
         bool isSprinting = Input.GetKey(KeyCode.LeftShift);
+
+        Debug.Log($"Is Moving: {isMoving}, Move Input: {moveInput}, Is Sprinting: {isSprinting}");
 
         if (isMoving)
         {
@@ -174,11 +206,15 @@ public class FirstPersonController : MonoBehaviour
             float newY = defaultCameraLocalPos.y + Mathf.Sin(bobTimer) * bobAmount;
             float newX = Mathf.Cos(bobTimer * 0.5f) * bobAmount * 0.5f; // Hafif sað-sol sallanma
 
+            Debug.Log($"Head Bobbing - Bob Timer: {bobTimer}, New Y: {newY}, New X: {newX}");
+
             playerCamera.transform.localPosition = new Vector3(
                 defaultCameraLocalPos.x + newX,
                 newY,
                 defaultCameraLocalPos.z
             );
+
+            Debug.Log($"Camera Local Position Updated: {playerCamera.transform.localPosition}");
 
             // Footsteps
             footstepTimer += Time.deltaTime;
@@ -200,6 +236,7 @@ public class FirstPersonController : MonoBehaviour
                 defaultCameraLocalPos,
                 Time.deltaTime * 5f
             );
+            Debug.Log($"Camera Local Position Reset: {playerCamera.transform.localPosition}");
         }
     }
 
