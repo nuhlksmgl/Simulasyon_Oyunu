@@ -18,7 +18,6 @@ public class ObjectPickup : MonoBehaviour
     private bool isHighlighted; // Vurgu durumunu takip et
     private GameObject shelf; // Raf objesi (referans için)
     private LayerMask pickupLayer; // Sadece Pickup layer’ını hedefleyen maske
-    private Quaternion initialCargoBoxRotation; // CargoBox’ın başlangıç rotasyonu
 
     private void Awake()
     {
@@ -78,11 +77,15 @@ public class ObjectPickup : MonoBehaviour
             holdPosition.position,
             Time.deltaTime * lerpSpeed);
 
-        // Eğer tutulan nesne bir CargoBox ise rotasyonu sabit tut
+        // Eğer tutulan nesne bir CargoBox ise rotasyonu her frame’de kameraya göre güncelle
         if (heldObject.TryGetComponent(out CargoBox cargoBox))
         {
-            // CargoBox’ın rotasyonunu sabit tut (üst taraf yukarıda kalacak)
-            heldObject.transform.rotation = initialCargoBoxRotation;
+            // Kameranın yönünü al (sadece yatay yön, Y eksenini sıfırla)
+            Vector3 cameraForward = mainCamera.transform.forward;
+            cameraForward.y = 0; // Y eksenini sıfırla (sadece yatay yönü al)
+            float cameraYaw = Quaternion.LookRotation(cameraForward).eulerAngles.y;
+            // CargoBox’ın rotasyonunu ayarla: X eksenini -90 derece sabit tut, Y ekseni kameraya göre güncellensin, Z ekseni 0
+            heldObject.transform.rotation = Quaternion.Euler(-90, cameraYaw, 0);
         }
         else
         {
@@ -189,8 +192,6 @@ public class ObjectPickup : MonoBehaviour
                 if (cargoBox != null && !cargoBox.IsBeingCarried())
                 {
                     heldObject = targetObject;
-                    // CargoBox’ın başlangıç rotasyonunu kaydet
-                    initialCargoBoxRotation = heldObject.transform.rotation;
                     RemoveHighlight();
                     SetupHeldObject(heldObject);
                     cargoBox.OnPickedUp();
@@ -269,6 +270,15 @@ public class ObjectPickup : MonoBehaviour
         heldObject.transform.SetParent(null);
         heldObject.transform.position = dropPosition; // Yere yakın bir pozisyona bırak
 
+        // CargoBox bırakıldığında rotasyonu kameraya göre ayarla
+        if (heldObject.TryGetComponent(out CargoBox cargoBox))
+        {
+            Vector3 cameraForward = mainCamera.transform.forward;
+            cameraForward.y = 0;
+            float cameraYaw = Quaternion.LookRotation(cameraForward).eulerAngles.y;
+            heldObject.transform.rotation = Quaternion.Euler(-90, cameraYaw, 0); // X eksenini -90 olarak koru
+        }
+
         Debug.Log($"{heldObject.name} bırakıldı. Pozisyon: {heldObject.transform.position}");
 
         if (heldObject.TryGetComponent(out Product product))
@@ -277,9 +287,9 @@ public class ObjectPickup : MonoBehaviour
             product.ResetPosition();
             Debug.Log($"{heldObject.name} ResetPosition sonrası pozisyon: {heldObject.transform.position}");
         }
-        else if (heldObject.TryGetComponent(out CargoBox cargoBox))
+        else if (heldObject.TryGetComponent(out CargoBox cargoBox2))
         {
-            cargoBox.OnDropped();
+            cargoBox2.OnDropped();
         }
 
         heldObject = null;
