@@ -106,6 +106,14 @@ public class ObjectPickup : MonoBehaviour
             {
                 newHighlightedObject = hitObject;
             }
+            else if (hitObject.CompareTag("CargoBox") && hitObject != heldObject)
+            {
+                CargoBox cargoBox = hitObject.GetComponent<CargoBox>();
+                if (cargoBox != null && !cargoBox.IsBeingCarried())
+                {
+                    newHighlightedObject = hitObject;
+                }
+            }
         }
 
         if (newHighlightedObject != highlightedObject)
@@ -156,12 +164,25 @@ public class ObjectPickup : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, pickupLayer))
         {
             GameObject targetObject = hit.collider.gameObject;
-            if (!targetObject.CompareTag("Pickup")) return;
-
-            heldObject = targetObject;
-            RemoveHighlight();
-            SetupHeldObject(heldObject);
-            Debug.Log($"Alındı: {heldObject.name}");
+            if (targetObject.CompareTag("Pickup"))
+            {
+                heldObject = targetObject;
+                RemoveHighlight();
+                SetupHeldObject(heldObject);
+                Debug.Log($"Alındı: {heldObject.name}");
+            }
+            else if (targetObject.CompareTag("CargoBox"))
+            {
+                CargoBox cargoBox = targetObject.GetComponent<CargoBox>();
+                if (cargoBox != null && !cargoBox.IsBeingCarried())
+                {
+                    heldObject = targetObject;
+                    RemoveHighlight();
+                    SetupHeldObject(heldObject);
+                    cargoBox.OnPickedUp();
+                    Debug.Log($"CargoBox alındı: {heldObject.name}");
+                }
+            }
         }
     }
 
@@ -216,16 +237,24 @@ public class ObjectPickup : MonoBehaviour
     {
         if (heldObject == null) return;
 
+        // Bırakmadan önce yere yakın bir pozisyon bul
+        Vector3 dropPosition = heldObject.transform.position;
+        if (Physics.Raycast(heldObject.transform.position, Vector3.down, out RaycastHit hit, 10f))
+        {
+            dropPosition = hit.point + Vector3.up * 0.5f; // Yerden biraz yukarıda bırak
+        }
+
         Rigidbody rb = heldObject.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            // Önce velocity ve angularVelocity sıfırlanır, sonra isKinematic değiştirilir
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.isKinematic = false;
         }
 
         heldObject.transform.SetParent(null);
+        heldObject.transform.position = dropPosition; // Yere yakın bir pozisyona bırak
+
         Debug.Log($"{heldObject.name} bırakıldı. Pozisyon: {heldObject.transform.position}");
 
         if (heldObject.TryGetComponent(out Product product))
@@ -233,6 +262,10 @@ public class ObjectPickup : MonoBehaviour
             product.isHeld = false;
             product.ResetPosition();
             Debug.Log($"{heldObject.name} ResetPosition sonrası pozisyon: {heldObject.transform.position}");
+        }
+        else if (heldObject.TryGetComponent(out CargoBox cargoBox))
+        {
+            cargoBox.OnDropped();
         }
 
         heldObject = null;
@@ -252,7 +285,6 @@ public class ObjectPickup : MonoBehaviour
 
                 if (heldObject.TryGetComponent(out Rigidbody rb))
                 {
-                    // Önce velocity ve angularVelocity sıfırlanır, sonra isKinematic true yapılır
                     rb.velocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
                     rb.isKinematic = true;
@@ -261,6 +293,10 @@ public class ObjectPickup : MonoBehaviour
                 if (heldObject.TryGetComponent(out Product product))
                 {
                     product.isHeld = false;
+                }
+                else if (heldObject.TryGetComponent(out CargoBox cargoBox))
+                {
+                    cargoBox.OnDropped();
                 }
 
                 Debug.Log($"{heldObject.name} raf slotuna yerleştirildi: {shelfSlots[i].name}, Pozisyon: {heldObject.transform.position}");
@@ -314,7 +350,7 @@ public class ObjectPickup : MonoBehaviour
             if (hit.CompareTag("CargoBox"))
             {
                 cargoBox = hit.GetComponent<CargoBox>();
-                if (cargoBox != null && !cargoBox.IsFull())
+                if (cargoBox != null && !cargoBox.IsFull() && !cargoBox.IsBeingCarried())
                 {
                     return true;
                 }
@@ -323,6 +359,13 @@ public class ObjectPickup : MonoBehaviour
         return false;
     }
 
-    public GameObject GetHeldObject() => heldObject;
-    public void ClearHeldObject() => heldObject = null;
+    public GameObject GetHeldObject()
+    {
+        return heldObject;
+    }
+
+    public void ClearHeldObject()
+    {
+        heldObject = null;
+    }
 }
