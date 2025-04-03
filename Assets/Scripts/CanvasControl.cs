@@ -6,13 +6,22 @@ public class CanvasControl : MonoBehaviour
     public KeyCode interactKey = KeyCode.E; // Etkileþim tuþu
     public float interactionDistance = 2f; // Mesafe kontrolü için kullanýlabilir (isteðe baðlý)
     public Transform player; // Oyuncunun Transform'u
-    public bool isCursorLocked = true; // Ýmleç kilitli mi?
+    public MarketScreenManager marketScreenManager; // MarketScreenManager referansý
 
     private bool isPlayerNearby = false; // Oyuncunun yakýnlýk durumunu kontrol etmek için
+    private bool isCanvasOpen = false; // Canvas’ýn açýk olup olmadýðýný takip etmek için
 
     void Start()
     {
-        LockCursor(); // Oyun baþladýðýnda imleci gizle ve kilitle
+        // Canvas’ý baþlangýçta kapat
+        if (canvas != null)
+        {
+            canvas.SetActive(false);
+            isCanvasOpen = false;
+        }
+
+        // Fareyi kilitle ve gizle
+        LockCursor();
     }
 
     void Update()
@@ -23,65 +32,88 @@ public class CanvasControl : MonoBehaviour
             ToggleCanvas();
         }
 
-        // ESC tuþu ile imleci serbest býrak
-        if (Input.GetKeyDown(KeyCode.Escape))
+        // ESC tuþu ile canvas’ý kapat ve fareyi kilitle
+        if (Input.GetKeyDown(KeyCode.Escape) && isCanvasOpen)
         {
+            CloseCanvas();
+        }
+    }
+
+    public void ToggleCanvas()
+    {
+        isCanvasOpen = !isCanvasOpen;
+        canvas.SetActive(isCanvasOpen);
+
+        if (isCanvasOpen)
+        {
+            // Canvas açýldýðýnda MarketScreenManager’ýn ShowMainMenu metodunu çaðýr
+            if (marketScreenManager != null)
+            {
+                marketScreenManager.ShowMainMenu();
+            }
             UnlockCursor();
         }
-
-        // Eðer Canvas kapalýysa imleci tekrar kilitlemek için
-        if (!canvas.activeSelf && isCursorLocked == false)
+        else
         {
+            // Canvas kapandýðýnda MarketScreenManager’ýn CloseCanvas metodunu çaðýr
+            if (marketScreenManager != null)
+            {
+                marketScreenManager.CloseCanvas();
+            }
             LockCursor();
         }
     }
 
-    void ToggleCanvas()
+    public void CloseCanvas()
     {
-        bool isActive = canvas.activeSelf; // Canvas'ýn açýk olup olmadýðýný kontrol et
-        canvas.SetActive(!isActive); // Durumu tersine çevir
+        isCanvasOpen = false;
+        canvas.SetActive(false);
 
-        if (canvas.activeSelf)
+        if (marketScreenManager != null)
         {
-            UnlockCursor(); // Canvas açýldýðýnda imleci serbest býrak
+            marketScreenManager.CloseCanvas();
         }
-        else
-        {
-            LockCursor(); // Canvas kapandýðýnda imleci tekrar kilitle
-        }
+        LockCursor();
     }
 
-    // Oyuncu Collider'ýn içine girerse
+    // Oyuncu Collider’ýn içine girerse
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player")) // Oyuncunun etiketinin "Player" olduðundan emin olun
         {
-            isPlayerNearby = true; // Oyuncu yakýn
+            isPlayerNearby = true;
+            Debug.Log("Oyuncu yakýnda, E tuþuna basarak canvas’ý açabilirsiniz.");
         }
     }
 
-    // Oyuncu Collider'dan çýkarsa
+    // Oyuncu Collider’dan çýkarsa
     void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player")) // Oyuncu ayrýldýðýnda
         {
-            isPlayerNearby = false; // Oyuncu uzak
+            isPlayerNearby = false;
+            // Oyuncu uzaklaþtýðýnda canvas açýksa kapat
+            if (isCanvasOpen)
+            {
+                CloseCanvas();
+            }
+            Debug.Log("Oyuncu uzaklaþtý, canvas kapatýldý.");
         }
     }
 
     // Ýmleci kilitle ve gizle
-    void LockCursor()
+    public void LockCursor()
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        isCursorLocked = true;
+        Debug.Log("Fare kilitlendi ve gizlendi.");
     }
 
     // Ýmleci serbest býrak ve görünür yap
-    void UnlockCursor()
+    public void UnlockCursor()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        isCursorLocked = false;
+        Debug.Log("Fare serbest býrakýldý ve görünür hale getirildi.");
     }
 }

@@ -22,7 +22,7 @@ public class SellPanel : MonoBehaviour
         {
             if (i < inGameMarket.products.Length)
             {
-                InGameMarket.MarketProduct product = inGameMarket.products[i]; // MarketProduct olarak güncellendi
+                InGameMarket.MarketProduct product = inGameMarket.products[i];
                 TextMeshProUGUI buttonText = sellButtons[i].GetComponentInChildren<TextMeshProUGUI>();
                 buttonText.text = $"{product.productName} ({product.quantity})";
 
@@ -46,9 +46,10 @@ public class SellPanel : MonoBehaviour
                 inputFields[i].gameObject.SetActive(false);
             }
         }
+        Debug.Log("SellPanel güncellendi.");
     }
 
-    void SellProduct(InGameMarket.MarketProduct product, TMP_InputField inputField) // MarketProduct olarak güncellendi
+    void SellProduct(InGameMarket.MarketProduct product, TMP_InputField inputField)
     {
         int quantityToSell = 1; // Örnek olarak her seferinde 1 adet satýlacaðýný varsayýyoruz
         int priceToSell;

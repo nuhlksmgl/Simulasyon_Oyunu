@@ -1,32 +1,32 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class ObjectPickup : MonoBehaviour
 {
-    [SerializeField] private Transform holdPosition; // Nesnenin tutulacaðý pozisyon
-    [SerializeField] private float pickupDistance = 5.0f; // Alým mesafesi
-    [SerializeField] private float lerpSpeed = 20f; // Hareket yumuþaklýðý
-    [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f); // Yeþil vurgu rengi
-    [SerializeField] private GameObject crosshair; // Niþangah UI objesi
-    [SerializeField] private Transform[] shelfSlots; // Raf slotlarýnýn dizisi
-    [SerializeField] private float shelfPlaceDistance = 2.0f; // Rafe yerleþtirme mesafesi
-    [SerializeField] private float cargoPlaceDistance = 2.0f; // Kargo kutusuna yerleþtirme mesafesi
+    [SerializeField] private Transform holdPosition; // Nesnenin tutulacaÄŸÄ± pozisyon
+    [SerializeField] private float pickupDistance = 5.0f; // AlÄ±m mesafesi
+    [SerializeField] private float lerpSpeed = 20f; // Hareket yumuÅŸaklÄ±ÄŸÄ±
+    [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f); // YeÅŸil vurgu rengi
+    [SerializeField] private GameObject crosshair; // NiÅŸangah UI objesi
+    [SerializeField] private Transform[] shelfSlots; // Raf slotlarÄ±nÄ±n dizisi
+    [SerializeField] private float shelfPlaceDistance = 2.0f; // Rafe yerleÅŸtirme mesafesi
+    [SerializeField] private float cargoPlaceDistance = 2.0f; // Kargo kutusuna yerleÅŸtirme mesafesi
 
     private GameObject heldObject; // Tutulan nesne
     private GameObject highlightedObject; // Vurgulanan nesne
     private Camera mainCamera;
     private Color originalColor; // Nesnenin orijinal rengi
     private bool isHighlighted; // Vurgu durumunu takip et
-    private GameObject shelf; // Raf objesi (referans için)
-    private LayerMask pickupLayer; // Sadece Pickup layer’ýný hedefleyen maske
+    private GameObject shelf; // Raf objesi (referans iÃ§in)
+    private LayerMask pickupLayer; // Sadece Pickup layerâ€™Ä±nÄ± hedefleyen maske
 
     private void Awake()
     {
         mainCamera = Camera.main;
-        if (holdPosition == null) Debug.LogError("HoldPosition atanmamýþ!", this);
-        if (crosshair == null) Debug.LogError("Crosshair atanmamýþ!", this);
-        if (shelfSlots == null || shelfSlots.Length == 0) Debug.LogError("ShelfSlots atanmamýþ!", this);
+        if (holdPosition == null) Debug.LogError("HoldPosition atanmamÄ±ÅŸ!", this);
+        if (crosshair == null) Debug.LogError("Crosshair atanmamÄ±ÅŸ!", this);
+        if (shelfSlots == null || shelfSlots.Length == 0) Debug.LogError("ShelfSlots atanmamÄ±ÅŸ!", this);
         shelf = GameObject.FindWithTag("Shelf");
-        if (shelf == null) Debug.LogError("Shelf tag’lý obje bulunamadý!", this);
+        if (shelf == null) Debug.LogError("Shelf tagâ€™lÄ± obje bulunamadÄ±!", this);
         pickupLayer = LayerMask.GetMask("Pickup");
     }
 
@@ -40,17 +40,17 @@ public class ObjectPickup : MonoBehaviour
 
     private void HandleInput()
     {
-        if (Input.GetMouseButtonDown(0)) // Sol týk
+        if (Input.GetMouseButtonDown(0)) // Sol tÄ±k
         {
             if (heldObject == null)
             {
-                // El boþsa yerden veya kargo kutusundan obje al
+                // El boÅŸsa yerden veya kargo kutusundan obje al
                 TryPickupObject();
                 if (heldObject == null) TryPickupFromCargoBox();
             }
             else
             {
-                // Elde obje varsa rafa veya kargo kutusuna yerleþtir
+                // Elde obje varsa rafa veya kargo kutusuna yerleÅŸtir
                 if (IsNearShelf())
                 {
                     TryPlaceObjectOnShelf();
@@ -161,7 +161,7 @@ public class ObjectPickup : MonoBehaviour
             heldObject = targetObject;
             RemoveHighlight();
             SetupHeldObject(heldObject);
-            Debug.Log($"Alýndý: {heldObject.name}");
+            Debug.Log($"AlÄ±ndÄ±: {heldObject.name}");
         }
     }
 
@@ -184,7 +184,7 @@ public class ObjectPickup : MonoBehaviour
                     {
                         heldObject = product.gameObject;
                         SetupHeldObject(heldObject);
-                        Debug.Log($"Kargo kutusundan alýndý: {heldObject.name}");
+                        Debug.Log($"Kargo kutusundan alÄ±ndÄ±: {heldObject.name}");
                         break;
                     }
                 }
@@ -219,20 +219,20 @@ public class ObjectPickup : MonoBehaviour
         Rigidbody rb = heldObject.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            // Önce velocity ve angularVelocity sýfýrlanýr, sonra isKinematic deðiþtirilir
+            // Ã–nce velocity ve angularVelocity sÄ±fÄ±rlanÄ±r, sonra isKinematic deÄŸiÅŸtirilir
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.isKinematic = false;
         }
 
         heldObject.transform.SetParent(null);
-        Debug.Log($"{heldObject.name} býrakýldý. Pozisyon: {heldObject.transform.position}");
+        Debug.Log($"{heldObject.name} bÄ±rakÄ±ldÄ±. Pozisyon: {heldObject.transform.position}");
 
         if (heldObject.TryGetComponent(out Product product))
         {
             product.isHeld = false;
             product.ResetPosition();
-            Debug.Log($"{heldObject.name} ResetPosition sonrasý pozisyon: {heldObject.transform.position}");
+            Debug.Log($"{heldObject.name} ResetPosition sonrasÄ± pozisyon: {heldObject.transform.position}");
         }
 
         heldObject = null;
@@ -252,7 +252,7 @@ public class ObjectPickup : MonoBehaviour
 
                 if (heldObject.TryGetComponent(out Rigidbody rb))
                 {
-                    // Önce velocity ve angularVelocity sýfýrlanýr, sonra isKinematic true yapýlýr
+                    // Ã–nce velocity ve angularVelocity sÄ±fÄ±rlanÄ±r, sonra isKinematic true yapÄ±lÄ±r
                     rb.velocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
                     rb.isKinematic = true;
@@ -263,12 +263,12 @@ public class ObjectPickup : MonoBehaviour
                     product.isHeld = false;
                 }
 
-                Debug.Log($"{heldObject.name} raf slotuna yerleþtirildi: {shelfSlots[i].name}, Pozisyon: {heldObject.transform.position}");
+                Debug.Log($"{heldObject.name} raf slotuna yerleÅŸtirildi: {shelfSlots[i].name}, Pozisyon: {heldObject.transform.position}");
                 heldObject = null;
                 return;
             }
         }
-        Debug.Log("Raf dolu, yerleþtirme yapýlamadý!");
+        Debug.Log("Raf dolu, yerleÅŸtirme yapÄ±lamadÄ±!");
     }
 
     private void TryPlaceObjectInCargoBox(CargoBox cargoBox)
@@ -279,7 +279,7 @@ public class ObjectPickup : MonoBehaviour
         {
             if (cargoBox.TryPlaceProduct(product))
             {
-                heldObject = null; // El boþaltýlýr
+                heldObject = null; // El boÅŸaltÄ±lÄ±r
             }
         }
     }

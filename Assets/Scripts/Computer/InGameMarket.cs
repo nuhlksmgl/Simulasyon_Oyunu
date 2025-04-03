@@ -9,7 +9,7 @@ public class InGameMarket : MonoBehaviour
     public class MarketProduct
     {
         public string productName;
-        public int price; // Tekrar public field olarak tanýmlandý
+        public int price;
         public GameObject productPrefab;
         public int quantity = 0;
         public bool isLarge;
@@ -44,20 +44,35 @@ public class InGameMarket : MonoBehaviour
 
     void Start()
     {
-        Button[] buttons = GetComponentsInChildren<Button>();
-        for (int i = 0; i < buttons.Length; i++)
-        {
-            int index = i;
-            if (buttons[i].CompareTag("BuyButton"))
-            {
-                buttons[i].onClick.AddListener(() => AddToBasket(index));
-            }
-        }
-
+        // Butonlarý baðla
+        SetupBuyButtons();
         UpdatePriceUI();
     }
 
-    // Inspector’da deðer deðiþtiðinde çaðrýlýr
+    public void SetupBuyButtons()
+    {
+        // Tüm alt GameObject’lerdeki butonlarý al
+        Button[] buttons = GetComponentsInChildren<Button>(true); // true: devre dýþý olanlar da dahil
+        Debug.Log($"Toplam {buttons.Length} buton bulundu.");
+
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i].CompareTag("BuyButton"))
+            {
+                int index = i;
+                buttons[i].onClick.RemoveAllListeners(); // Önceki listener’larý temizle
+                buttons[i].onClick.AddListener(() => AddToBasket(index));
+                Debug.Log($"BuyButton tag’ine sahip buton bulundu: {buttons[i].name}, index: {index}");
+            }
+        }
+
+        // Eðer hiçbir BuyButton bulunamadýysa uyarý ver
+        if (!System.Array.Exists(buttons, button => button.CompareTag("BuyButton")))
+        {
+            Debug.LogWarning("Hiçbir buton 'BuyButton' tag’ine sahip deðil! Butonlarýn tag’lerini kontrol edin.");
+        }
+    }
+
     void OnValidate()
     {
         UpdatePriceUI();
@@ -65,15 +80,26 @@ public class InGameMarket : MonoBehaviour
 
     public void AddToBasket(int productIndex)
     {
+        Debug.Log($"AddToBasket çaðrýldý, productIndex: {productIndex}");
+
         if (productIndex < 0 || productIndex >= products.Length)
         {
-            Debug.LogError("Geçersiz ürün indeksi!");
+            Debug.LogError($"Geçersiz ürün indeksi: {productIndex}, products.Length: {products.Length}");
             return;
         }
 
         MarketProduct product = products[productIndex];
+        Debug.Log($"Ürün: {product.productName}, Fiyat: {product.price}");
+
+        if (playerBalance == null)
+        {
+            Debug.LogError("PlayerBalance referansý eksik!");
+            return;
+        }
+
         int quantityToBuy = 1;
         int totalPrice = product.price * quantityToBuy;
+        Debug.Log($"Toplam fiyat: {totalPrice}, Oyuncu bakiyesi: {playerBalance.GetBalance()}");
 
         if (playerBalance.DeductBalance(totalPrice))
         {
@@ -88,7 +114,14 @@ public class InGameMarket : MonoBehaviour
                 orderBasket.Add(new OrderItem { product = product, quantity = quantityToBuy });
             }
             product.quantity += quantityToBuy;
-            sellPanel.UpdateSellPanel();
+            if (sellPanel != null)
+            {
+                sellPanel.UpdateSellPanel();
+            }
+            else
+            {
+                Debug.LogWarning("SellPanel referansý eksik!");
+            }
         }
         else
         {
@@ -103,6 +136,7 @@ public class InGameMarket : MonoBehaviour
             SpawnProductInCargoBox(order.product, order.quantity);
         }
         orderBasket.Clear();
+        Debug.Log("Sipariþler iþlendi, sepet temizlendi.");
     }
 
     void SpawnProductInCargoBox(MarketProduct product, int quantity)

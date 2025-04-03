@@ -6,12 +6,11 @@ public class MarketScreenManager : MonoBehaviour
     public GameObject buyPanel;
     public GameObject sellPanel;
     public InGameMarket inGameMarket;
+    public SellPanel sellPanelScript;
 
     void Start()
     {
-        // Oyun baþladýðýnda fareyi gizle ve kilitle (isteðe baðlý)
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        CloseCanvas();
     }
 
     public void ShowMainMenu()
@@ -19,8 +18,12 @@ public class MarketScreenManager : MonoBehaviour
         mainMenu.SetActive(true);
         buyPanel.SetActive(false);
         sellPanel.SetActive(false);
-        Cursor.visible = true; // Canvas açýkken fare görünür
-        Cursor.lockState = CursorLockMode.None;
+
+        if (sellPanelScript != null)
+        {
+            sellPanelScript.UpdateSellPanel();
+        }
+        Debug.Log("Ana menü gösterildi.");
     }
 
     public void ShowBuyPanel()
@@ -28,8 +31,12 @@ public class MarketScreenManager : MonoBehaviour
         mainMenu.SetActive(false);
         buyPanel.SetActive(true);
         sellPanel.SetActive(false);
-        Cursor.visible = true; // Canvas açýkken fare görünür
-        Cursor.lockState = CursorLockMode.None;
+
+        if (inGameMarket != null)
+        {
+            inGameMarket.SetupBuyButtons();
+        }
+        Debug.Log("Satýn alma paneli gösterildi.");
     }
 
     public void ShowSellPanel()
@@ -37,8 +44,12 @@ public class MarketScreenManager : MonoBehaviour
         mainMenu.SetActive(false);
         buyPanel.SetActive(false);
         sellPanel.SetActive(true);
-        Cursor.visible = true; // Canvas açýkken fare görünür
-        Cursor.lockState = CursorLockMode.None;
+
+        if (sellPanelScript != null)
+        {
+            sellPanelScript.UpdateSellPanel();
+        }
+        Debug.Log("Satýþ paneli gösterildi.");
     }
 
     public void CloseCanvas()
@@ -46,8 +57,11 @@ public class MarketScreenManager : MonoBehaviour
         mainMenu.SetActive(false);
         buyPanel.SetActive(false);
         sellPanel.SetActive(false);
-        inGameMarket.ProcessOrders(); // Sipariþleri iþle
-        Cursor.visible = false; // Canvas kapandýðýnda fareyi gizle
-        Cursor.lockState = CursorLockMode.Locked; // Fareyi kilitle
+
+        if (inGameMarket != null)
+        {
+            inGameMarket.ProcessOrders();
+        }
+        Debug.Log("Canvas kapatýldý, sipariþler iþlendi.");
     }
 }
