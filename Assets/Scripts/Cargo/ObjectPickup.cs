@@ -28,10 +28,24 @@ public class ObjectPickup : MonoBehaviour
         shelf = GameObject.FindWithTag("Shelf");
         if (shelf == null) Debug.LogError("Shelf tag’lı obje bulunamadı!", this);
         pickupLayer = LayerMask.GetMask("Pickup");
+
+        // HoldPosition’ın ölçeğini (1,1,1) yap
+        if (holdPosition.localScale != Vector3.one)
+        {
+            Debug.LogWarning("HoldPosition’ın ölçeği (1,1,1) değil! Ölçek sıfırlanıyor.");
+            holdPosition.localScale = Vector3.one;
+        }
     }
 
     private void Update()
     {
+        // HoldPosition’ın ölçeğini her frame’de kontrol et
+        if (holdPosition.localScale != Vector3.one)
+        {
+            Debug.LogWarning($"HoldPosition’ın ölçeği değişti! Şu anki ölçek: {holdPosition.localScale}. Ölçek sıfırlanıyor.");
+            holdPosition.localScale = Vector3.one;
+        }
+
         HandleInput();
         UpdateHeldObjectPosition();
         HighlightObjectUnderMouse();
@@ -232,8 +246,19 @@ public class ObjectPickup : MonoBehaviour
     {
         if (obj == null || holdPosition == null) return;
 
+        // Product nesnesi ise ölçeği al
+        Vector3 originalScale = obj.transform.localScale;
+        if (obj.TryGetComponent(out Product product))
+        {
+            originalScale = product.GetOriginalScale(); // Orijinal ölçeği Product’tan al
+            Debug.Log($"{obj.name} alındığında ölçek: {originalScale}");
+        }
+
         obj.transform.SetParent(holdPosition);
         obj.transform.localPosition = Vector3.zero;
+
+        // Ölçeği orijinal değerine geri getir
+        obj.transform.localScale = originalScale;
 
         if (obj.TryGetComponent(out Rigidbody rb))
         {
@@ -242,9 +267,9 @@ public class ObjectPickup : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
 
-        if (obj.TryGetComponent(out Product product))
+        if (obj.TryGetComponent(out Product productComponent))
         {
-            product.OnPickedUp();
+            productComponent.OnPickedUp();
         }
     }
 
@@ -267,8 +292,17 @@ public class ObjectPickup : MonoBehaviour
             rb.isKinematic = false;
         }
 
+        // Product nesnesi ise ölçeği al
+        Vector3 originalScale = heldObject.transform.localScale;
+        if (heldObject.TryGetComponent(out Product product))
+        {
+            originalScale = product.GetOriginalScale(); // Orijinal ölçeği Product’tan al
+            Debug.Log($"{heldObject.name} bırakılmadan önce ölçek: {originalScale}");
+        }
+
         heldObject.transform.SetParent(null);
         heldObject.transform.position = dropPosition; // Yere yakın bir pozisyona bırak
+        heldObject.transform.localScale = originalScale; // Ölçeği koru
 
         // CargoBox bırakıldığında rotasyonu kameraya göre ayarla
         if (heldObject.TryGetComponent(out CargoBox cargoBox))
@@ -279,13 +313,13 @@ public class ObjectPickup : MonoBehaviour
             heldObject.transform.rotation = Quaternion.Euler(-90, cameraYaw, 0); // X eksenini -90 olarak koru
         }
 
-        Debug.Log($"{heldObject.name} bırakıldı. Pozisyon: {heldObject.transform.position}");
+        Debug.Log($"{heldObject.name} bırakıldı. Pozisyon: {heldObject.transform.position}, Ölçek: {heldObject.transform.localScale}");
 
-        if (heldObject.TryGetComponent(out Product product))
+        if (heldObject.TryGetComponent(out Product productComponent))
         {
-            product.isHeld = false;
-            product.ResetPosition();
-            Debug.Log($"{heldObject.name} ResetPosition sonrası pozisyon: {heldObject.transform.position}");
+            productComponent.isHeld = false;
+            productComponent.ResetPosition();
+            Debug.Log($"{heldObject.name} ResetPosition sonrası pozisyon: {heldObject.transform.position}, Ölçek: {heldObject.transform.localScale}");
         }
         else if (heldObject.TryGetComponent(out CargoBox cargoBox2))
         {
@@ -303,9 +337,24 @@ public class ObjectPickup : MonoBehaviour
         {
             if (shelfSlots[i] != null && !IsSlotOccupied(shelfSlots[i]))
             {
+                // Product nesnesi ise ölçeği al
+                Vector3 originalScale = heldObject.transform.localScale;
+                if (heldObject.TryGetComponent(out Product product))
+                {
+                    originalScale = product.GetOriginalScale(); // Orijinal ölçeği Product’tan al
+                }
+
                 heldObject.transform.SetParent(shelf.transform);
                 heldObject.transform.position = shelfSlots[i].position;
                 heldObject.transform.rotation = shelfSlots[i].rotation;
+
+                // Shelf’in ölçeğine göre Product’ın localScale’ini ayarla
+                Vector3 shelfScale = shelf.transform.localScale;
+                heldObject.transform.localScale = new Vector3(
+                    originalScale.x / shelfScale.x,
+                    originalScale.y / shelfScale.y,
+                    originalScale.z / shelfScale.z
+                );
 
                 if (heldObject.TryGetComponent(out Rigidbody rb))
                 {
@@ -314,16 +363,16 @@ public class ObjectPickup : MonoBehaviour
                     rb.isKinematic = true;
                 }
 
-                if (heldObject.TryGetComponent(out Product product))
+                if (heldObject.TryGetComponent(out Product productComponent))
                 {
-                    product.isHeld = false;
+                    productComponent.isHeld = false;
                 }
                 else if (heldObject.TryGetComponent(out CargoBox cargoBox))
                 {
                     cargoBox.OnDropped();
                 }
 
-                Debug.Log($"{heldObject.name} raf slotuna yerleştirildi: {shelfSlots[i].name}, Pozisyon: {heldObject.transform.position}");
+                Debug.Log($"{heldObject.name} raf slotuna yerleştirildi: {shelfSlots[i].name}, Pozisyon: {heldObject.transform.position}, Local Ölçek: {heldObject.transform.localScale}, Dünya Ölçeği: {heldObject.transform.lossyScale}");
                 heldObject = null;
                 return;
             }
@@ -335,10 +384,14 @@ public class ObjectPickup : MonoBehaviour
     {
         if (heldObject == null || cargoBox == null) return;
 
+        // Product nesnesi ise ölçeği al
+        Vector3 originalScale = heldObject.transform.localScale;
         if (heldObject.TryGetComponent(out Product product))
         {
+            originalScale = product.GetOriginalScale(); // Orijinal ölçeği Product’tan al
             if (cargoBox.TryPlaceProduct(product))
             {
+                heldObject.transform.localScale = originalScale; // Ölçeği koru
                 heldObject = null; // El boşaltılır
             }
         }

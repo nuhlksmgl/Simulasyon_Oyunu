@@ -1,9 +1,17 @@
 ﻿using UnityEngine;
+
 public class Product : MonoBehaviour
 {
     private ObjectPickup objectPickup;
     public bool isPlaced = false; // Erişilebilir hale getirdik
     public bool isHeld = false;   // Ürün tutulup tutulmadığını takip eden değişken
+    private Vector3 originalScale; // Orijinal ölçeği saklamak için
+
+    private void Awake()
+    {
+        originalScale = transform.localScale; // Orijinal ölçeği sakla
+        Debug.Log($"{gameObject.name} için orijinal ölçek: {originalScale}");
+    }
 
     private void Start()
     {
@@ -53,5 +61,13 @@ public class Product : MonoBehaviour
     {
         isPlaced = false;
         isHeld = false;
+        transform.localScale = originalScale; // Ölçeği orijinal değerine geri getir
+        Debug.Log($"{gameObject.name} ResetPosition sonrası ölçek: {transform.localScale}");
+    }
+
+    // OriginalScale’a erişim için getter
+    public Vector3 GetOriginalScale()
+    {
+        return originalScale;
     }
 }

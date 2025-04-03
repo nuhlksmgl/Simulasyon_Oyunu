@@ -80,8 +80,16 @@ public class CargoBox : MonoBehaviour
 
     public Product TryRemoveProduct(Vector3 rayOrigin, Vector3 rayDirection, float maxDistance)
     {
+        if (isBeingCarried)
+        {
+            Debug.Log("Kutu taşınıyor, ürün alınamaz!");
+            return null;
+        }
+
+        // Pickup layer’ını hedefleyen bir raycast yap
+        LayerMask pickupLayer = LayerMask.GetMask("Pickup");
         Ray ray = new Ray(rayOrigin, rayDirection);
-        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance))
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, pickupLayer))
         {
             Product product = hit.collider.GetComponent<Product>();
             if (product != null && placedProducts.Contains(product))
@@ -97,9 +105,26 @@ public class CargoBox : MonoBehaviour
                     Debug.Log($"Çarpışma etkinleştirildi: {product.gameObject.name} ile {gameObject.name}");
                 }
 
+                // Ürünün fiziksel özelliklerini sıfırla
+                Rigidbody productRb = product.GetComponent<Rigidbody>();
+                if (productRb != null)
+                {
+                    productRb.isKinematic = false;
+                    productRb.velocity = Vector3.zero;
+                    productRb.angularVelocity = Vector3.zero;
+                }
+
                 Debug.Log($"{product.gameObject.name} kargo kutusundan alındı.");
                 return product;
             }
+            else
+            {
+                Debug.Log("Raycast bir Product’a çarptı, ancak bu ürün kutuda değil.");
+            }
+        }
+        else
+        {
+            Debug.Log("Raycast hiçbir şeye çarpmadı.");
         }
         return null;
     }
