@@ -18,6 +18,7 @@ public class ObjectPickup : MonoBehaviour
     private bool isHighlighted; // Vurgu durumunu takip et
     private GameObject shelf; // Raf objesi (referans için)
     private LayerMask pickupLayer; // Sadece Pickup layer’ını hedefleyen maske
+    private Quaternion initialCargoBoxRotation; // CargoBox’ın başlangıç rotasyonu
 
     private void Awake()
     {
@@ -71,15 +72,26 @@ public class ObjectPickup : MonoBehaviour
     {
         if (heldObject == null || holdPosition == null) return;
 
+        // Pozisyonu her zaman güncelle
         heldObject.transform.position = Vector3.Lerp(
             heldObject.transform.position,
             holdPosition.position,
             Time.deltaTime * lerpSpeed);
 
-        heldObject.transform.rotation = Quaternion.Lerp(
-            heldObject.transform.rotation,
-            holdPosition.rotation,
-            Time.deltaTime * lerpSpeed);
+        // Eğer tutulan nesne bir CargoBox ise rotasyonu sabit tut
+        if (heldObject.TryGetComponent(out CargoBox cargoBox))
+        {
+            // CargoBox’ın rotasyonunu sabit tut (üst taraf yukarıda kalacak)
+            heldObject.transform.rotation = initialCargoBoxRotation;
+        }
+        else
+        {
+            // Diğer nesneler (örneğin Product) için rotasyonu holdPosition’a göre güncelle
+            heldObject.transform.rotation = Quaternion.Lerp(
+                heldObject.transform.rotation,
+                holdPosition.rotation,
+                Time.deltaTime * lerpSpeed);
+        }
     }
 
     private void UpdateCrosshairVisibility()
@@ -177,6 +189,8 @@ public class ObjectPickup : MonoBehaviour
                 if (cargoBox != null && !cargoBox.IsBeingCarried())
                 {
                     heldObject = targetObject;
+                    // CargoBox’ın başlangıç rotasyonunu kaydet
+                    initialCargoBoxRotation = heldObject.transform.rotation;
                     RemoveHighlight();
                     SetupHeldObject(heldObject);
                     cargoBox.OnPickedUp();
