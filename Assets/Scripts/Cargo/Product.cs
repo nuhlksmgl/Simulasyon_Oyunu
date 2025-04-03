@@ -21,14 +21,11 @@ public class Product : MonoBehaviour
 
     private void Update()
     {
-        // Ürün elde tutuluyorsa ve 'F' tuşuna basıldığında kargo kutusuna yerleştir
-        if (!isPlaced && isHeld && objectPickup != null && objectPickup.GetHeldObject() == gameObject && Input.GetKeyDown(KeyCode.F))
-        {
-            TryPlaceInBox();
-        }
+        // F tuşu ile yerleştirme devre dışı bırakıldı
+        // Hiçbir şey eklenmedi, sadece F tuşuyla tetiklenen kod kaldırıldı
     }
 
-    // Ürünü kargo kutusuna yerleştirmeyi dener
+    // Ürünü kargo kutusuna yerleştirmeyi dener (artık Update’te kullanılmıyor)
     private void TryPlaceInBox()
     {
         CargoBox[] boxes = FindObjectsOfType<CargoBox>();

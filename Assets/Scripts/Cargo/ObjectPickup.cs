@@ -384,14 +384,10 @@ public class ObjectPickup : MonoBehaviour
     {
         if (heldObject == null || cargoBox == null) return;
 
-        // Product nesnesi ise ölçeği al
-        Vector3 originalScale = heldObject.transform.localScale;
         if (heldObject.TryGetComponent(out Product product))
         {
-            originalScale = product.GetOriginalScale(); // Orijinal ölçeği Product’tan al
             if (cargoBox.TryPlaceProduct(product))
             {
-                heldObject.transform.localScale = originalScale; // Ölçeği koru
                 heldObject = null; // El boşaltılır
             }
         }

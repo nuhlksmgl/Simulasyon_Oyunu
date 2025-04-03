@@ -48,6 +48,11 @@ public class CargoBox : MonoBehaviour
 
         int slotIndex = placedProducts.Count;
         Transform slot = productSlots[slotIndex];
+        if (slot == null)
+        {
+            Debug.LogError($"Hata: {gameObject.name} için slot {slotIndex} null!");
+            return false;
+        }
 
         Rigidbody productRb = product.GetComponent<Rigidbody>();
         if (productRb != null)
@@ -70,7 +75,10 @@ public class CargoBox : MonoBehaviour
         product.transform.position = slot.position;
         product.transform.rotation = Quaternion.Euler(0, 0, 0); // Rotasyonu sıfırla
 
-        Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildikten sonra rotasyon: {product.transform.rotation.eulerAngles}");
+        // Product’ın localScale’ini (1, 1, 1) olarak ayarla
+        product.transform.localScale = Vector3.one; // (1, 1, 1)
+
+        Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildikten sonra rotasyon: {product.transform.rotation.eulerAngles}, Local Ölçek: {product.transform.localScale}, Dünya Ölçeği: {product.transform.lossyScale}");
 
         placedProducts.Add(product);
         Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildi.");
@@ -114,7 +122,10 @@ public class CargoBox : MonoBehaviour
                     productRb.angularVelocity = Vector3.zero;
                 }
 
-                Debug.Log($"{product.gameObject.name} kargo kutusundan alındı.");
+                // Ürünün ölçeğini orijinal değerine geri getir
+                product.transform.localScale = product.GetOriginalScale();
+
+                Debug.Log($"{product.gameObject.name} kargo kutusundan alındı. Ölçek: {product.transform.localScale}");
                 return product;
             }
             else
