@@ -1,12 +1,15 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class MarketScreenManager : MonoBehaviour
 {
     public GameObject mainMenu;
     public GameObject buyPanel;
     public GameObject sellPanel;
+    public GameObject orderListPanel;
+
     public InGameMarket inGameMarket;
     public SellPanel sellPanelScript;
+    public OrderListPanelUI orderListPanelUI; // SipariÅŸ panelini kontrol edecek script referansÄ±
 
     void Start()
     {
@@ -18,12 +21,12 @@ public class MarketScreenManager : MonoBehaviour
         mainMenu.SetActive(true);
         buyPanel.SetActive(false);
         sellPanel.SetActive(false);
+        orderListPanel.SetActive(false);
 
         if (sellPanelScript != null)
         {
             sellPanelScript.UpdateSellPanel();
         }
-        Debug.Log("Ana menü gösterildi.");
     }
 
     public void ShowBuyPanel()
@@ -31,12 +34,12 @@ public class MarketScreenManager : MonoBehaviour
         mainMenu.SetActive(false);
         buyPanel.SetActive(true);
         sellPanel.SetActive(false);
+        orderListPanel.SetActive(false);
 
         if (inGameMarket != null)
         {
             inGameMarket.SetupBuyButtons();
         }
-        Debug.Log("Satýn alma paneli gösterildi.");
     }
 
     public void ShowSellPanel()
@@ -44,12 +47,25 @@ public class MarketScreenManager : MonoBehaviour
         mainMenu.SetActive(false);
         buyPanel.SetActive(false);
         sellPanel.SetActive(true);
+        orderListPanel.SetActive(false);
 
         if (sellPanelScript != null)
         {
             sellPanelScript.UpdateSellPanel();
         }
-        Debug.Log("Satýþ paneli gösterildi.");
+    }
+
+    public void ShowOrderListPanel()
+    {
+        mainMenu.SetActive(false);
+        buyPanel.SetActive(false);
+        sellPanel.SetActive(false);
+        orderListPanel.SetActive(true);
+
+        if (orderListPanelUI != null)
+        {
+            orderListPanelUI.Show(); // ðŸ’¥ SipariÅŸler burada gÃ¶steriliyor!
+        }
     }
 
     public void CloseCanvas()
@@ -57,11 +73,11 @@ public class MarketScreenManager : MonoBehaviour
         mainMenu.SetActive(false);
         buyPanel.SetActive(false);
         sellPanel.SetActive(false);
+        orderListPanel.SetActive(false);
 
         if (inGameMarket != null)
         {
             inGameMarket.ProcessOrders();
         }
-        Debug.Log("Canvas kapatýldý, sipariþler iþlendi.");
     }
 }

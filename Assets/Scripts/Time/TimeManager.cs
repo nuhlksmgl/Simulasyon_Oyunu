@@ -7,8 +7,8 @@ public class TimeManager : MonoBehaviour
     public float timeMultiplier = 60f; // Oyun zamaný hýzý (örneðin, gerçek 1 saniye = oyun içi 1 dakika)
 
     // Oyun zamaný
-    private int currentHour = 7;       // Baþlangýç saati
-    private int currentMinute = 0;    // Baþlangýç dakikasý
+    public int currentHour = 7;       // Baþlangýç saati
+    public int currentMinute = 0;    // Baþlangýç dakikasý
     private int currentDay = 1;       // Baþlangýç günü
 
     // UI için referanslar
@@ -26,7 +26,7 @@ public class TimeManager : MonoBehaviour
         currentDay = 1;    // Baþlangýç günü 1
 
         // Baþlangýç zaman bilgilerini konsola yazdýr
-        Debug.Log("Game Started. Day: " + currentDay + ", Hour: " + currentHour + ", Minute: " + currentMinute);
+        
     }
 
     void Update()
@@ -50,7 +50,7 @@ public class TimeManager : MonoBehaviour
         {
             currentDay++;
             hasDayChanged = true; // Gün deðiþimini tetikledikten sonra bayraðý kaldýr
-            Debug.Log("New Day Started: Day " + currentDay);
+            
         }
 
         // Gün deðiþim bayraðýný sýfýrla

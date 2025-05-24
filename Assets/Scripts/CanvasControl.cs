@@ -82,7 +82,7 @@ public class CanvasControl : MonoBehaviour
         if (other.CompareTag("Player")) // Oyuncunun etiketinin "Player" olduðundan emin olun
         {
             isPlayerNearby = true;
-            Debug.Log("Oyuncu yakýnda, E tuþuna basarak canvas’ý açabilirsiniz.");
+            
         }
     }
 
@@ -97,7 +97,7 @@ public class CanvasControl : MonoBehaviour
             {
                 CloseCanvas();
             }
-            Debug.Log("Oyuncu uzaklaþtý, canvas kapatýldý.");
+            
         }
     }
 
@@ -106,7 +106,7 @@ public class CanvasControl : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        Debug.Log("Fare kilitlendi ve gizlendi.");
+        
     }
 
     // Ýmleci serbest býrak ve görünür yap
@@ -114,6 +114,6 @@ public class CanvasControl : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        Debug.Log("Fare serbest býrakýldý ve görünür hale getirildi.");
+        
     }
 }

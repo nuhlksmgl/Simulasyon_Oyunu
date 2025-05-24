@@ -2,31 +2,27 @@
 
 public class Product : MonoBehaviour
 {
+    public InGameMarket.MarketProduct productDefinition; // 📌 Ürün tanımı → sipariş eşleştirme için
+
     private ObjectPickup objectPickup;
-    public bool isPlaced = false; // Erişilebilir hale getirdik
-    public bool isHeld = false;   // Ürün tutulup tutulmadığını takip eden değişken
-    private Vector3 originalScale; // Orijinal ölçeği saklamak için
+    public bool isPlaced = false;
+    public bool isHeld = false;
+
+    private Vector3 originalScale;
 
     private void Awake()
     {
-        originalScale = transform.localScale; // Orijinal ölçeği sakla
-        Debug.Log($"{gameObject.name} için orijinal ölçek: {originalScale}");
+        originalScale = transform.localScale;
     }
 
     private void Start()
     {
         objectPickup = FindObjectOfType<ObjectPickup>();
-        gameObject.tag = "Pickup"; // Ürünün etiketini "Pickup" yapar
+        gameObject.tag = "Pickup";
     }
 
-    private void Update()
-    {
-        // F tuşu ile yerleştirme devre dışı bırakıldı
-        // Hiçbir şey eklenmedi, sadece F tuşuyla tetiklenen kod kaldırıldı
-    }
-
-    // Ürünü kargo kutusuna yerleştirmeyi dener (artık Update’te kullanılmıyor)
-    private void TryPlaceInBox()
+    // Kargo kutusuna yerleştirme kontrolü (başka bir sistemden çağrılır)
+    public void TryPlaceInNearbyBox()
     {
         CargoBox[] boxes = FindObjectsOfType<CargoBox>();
         foreach (CargoBox box in boxes)
@@ -36,33 +32,24 @@ public class Product : MonoBehaviour
                 isPlaced = true;
                 isHeld = false;
                 objectPickup.ClearHeldObject();
-                Debug.Log($"{gameObject.name} kargo kutusuna yerleştirildi.");
-                break;
+                return;
             }
-        }
-
-        if (!isPlaced)
-        {
-            Debug.Log($"{gameObject.name} kutuya yerleştirilemedi.");
         }
     }
 
     public void OnPickedUp()
     {
-        isHeld = true; // Ürün alındı
+        isHeld = true;
         isPlaced = false;
-        Debug.Log($"{gameObject.name} alındı.");
     }
 
     public void ResetPosition()
     {
         isPlaced = false;
         isHeld = false;
-        transform.localScale = originalScale; // Ölçeği orijinal değerine geri getir
-        Debug.Log($"{gameObject.name} ResetPosition sonrası ölçek: {transform.localScale}");
+        transform.localScale = originalScale;
     }
 
-    // OriginalScale’a erişim için getter
     public Vector3 GetOriginalScale()
     {
         return originalScale;

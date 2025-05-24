@@ -4,32 +4,32 @@ using TMPro;
 
 public class ComputerOrderSystem : MonoBehaviour
 {
-    public InGameMarket inGameMarket; // InGameMarket script referansý
-    public PlayerBalance playerBalance; // PlayerBalance script referansý
-    public SellPanel sellPanel; // SellPanel script referansý
-    public float orderInterval = 10.0f; // Sipariþ verme aralýðý
+    public InGameMarket inGameMarket;
+    public PlayerBalance playerBalance;
+    public SellPanel sellPanel;
+
+    public float orderInterval = 10.0f;
     private float nextOrderTime = 0.0f;
-    public TextMeshProUGUI orderPanelText; // Sipariþleri gösterecek TextMeshPro UI elemaný
-    public GameObject orderPanel; // Sipariþ paneli
-    private float orderDisplayDuration = 60.0f; // Panelin açýk kalma süresi
-    private float orderDisplayEndTime = 0.0f; // Panelin kapanma zamaný
+
+    public TextMeshProUGUI orderPanelText;
+    public GameObject orderPanel;
+    private float orderDisplayDuration = 60.0f;
+    private float orderDisplayEndTime = 0.0f;
     private bool orderPanelVisible = false;
 
     void Start()
     {
-        orderPanel.SetActive(false); // OrderPanel'i baþlangýçta kapalý yap
+        orderPanel.SetActive(false);
     }
 
     void Update()
     {
-        // Saat sistemine göre sipariþleri kontrol et
         if (Time.time >= nextOrderTime)
         {
             PlaceRandomOrder();
             nextOrderTime = Time.time + orderInterval;
         }
 
-        // OrderPanel'i gösterme süresini kontrol et
         if (orderPanelVisible && Time.time >= orderDisplayEndTime)
         {
             orderPanel.SetActive(false);
@@ -42,12 +42,11 @@ public class ComputerOrderSystem : MonoBehaviour
         Dictionary<string, int> sellQuantities = sellPanel.GetSellQuantities();
         Dictionary<string, int> sellPrices = sellPanel.GetSellPrices();
 
-        // En az 4 farklý ürün olmasý durumunda sipariþ verebiliriz
         if (sellQuantities.Count >= 4)
         {
-            orderPanelText.text = "Bilgisayar Sipariþ Verdi:\n";
-            orderPanel.SetActive(true); // OrderPanel'i aç
-            orderDisplayEndTime = Time.time + orderDisplayDuration; // Kapanma zamanýný ayarla
+            orderPanelText.text = "Bilgisayar Sipariþi Verdi:\n";
+            orderPanel.SetActive(true);
+            orderDisplayEndTime = Time.time + orderDisplayDuration;
             orderPanelVisible = true;
 
             List<string> productsToRemove = new List<string>();
@@ -59,9 +58,13 @@ public class ComputerOrderSystem : MonoBehaviour
 
                 string productName = item.Key;
                 int quantityToSell = item.Value;
-                int price = sellPrices[productName];
 
-                // Bilgisayarýn ürünü satýn almasý
+                if (!sellPrices.TryGetValue(productName, out int price))
+                {
+                    Debug.LogWarning($"{productName} için fiyat bulunamadý.");
+                    continue;
+                }
+
                 sellQuantities[productName]--;
                 if (sellQuantities[productName] <= 0)
                 {
@@ -71,21 +74,15 @@ public class ComputerOrderSystem : MonoBehaviour
                 playerBalance.AddBalance(price);
                 orderPanelText.text += $"{productName} - {price} $\n";
 
-                Debug.Log($"Bilgisayar {productName} sipariþ verdi! Yeni bakiye: {playerBalance.GetBalance()} $");
+                Debug.Log($"Bilgisayar {productName} sipariþi verdi. Yeni bakiye: {playerBalance.GetBalance()}");
             }
 
-            // Stoklarý güncelle
             foreach (string productName in productsToRemove)
             {
                 sellQuantities.Remove(productName);
             }
 
-            // Satýþ sonrasý paneli güncelle
             sellPanel.UpdateSellPanel();
-        }
-        else
-        {
-            
         }
     }
 }

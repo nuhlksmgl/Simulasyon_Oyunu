@@ -23,7 +23,7 @@ public class NPCMovement : MonoBehaviour
 
         if (agent == null || animator == null)
         {
-            Debug.LogError("NavMeshAgent veya Animator bileþeni eksik!");
+            
             return;
         }
 
@@ -36,12 +36,12 @@ public class NPCMovement : MonoBehaviour
             }
             else
             {
-                Debug.LogError("Plane nesnesinde Renderer bileþeni bulunamadý!");
+                
             }
         }
         else
         {
-            Debug.LogError("Plane nesnesi atanmadý!");
+            
         }
 
         SetNewDestination();

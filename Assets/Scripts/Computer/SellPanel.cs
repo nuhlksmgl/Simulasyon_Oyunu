@@ -46,7 +46,7 @@ public class SellPanel : MonoBehaviour
                 inputFields[i].gameObject.SetActive(false);
             }
         }
-        Debug.Log("SellPanel güncellendi.");
+        
     }
 
     void SellProduct(InGameMarket.MarketProduct product, TMP_InputField inputField)
@@ -66,12 +66,12 @@ public class SellPanel : MonoBehaviour
                 sellQuantities[product.productName] = quantityToSell;
             }
             sellPrices[product.productName] = priceToSell; // Ürün fiyatýný kaydediyoruz
-            Debug.Log($"{product.productName} satýþta! Satýþ fiyatý: {priceToSell} $");
+            
             UpdateSellPanel(); // Satýþ sonrasý paneli güncelle
         }
         else
         {
-            Debug.LogError("Yetersiz miktar veya geçersiz fiyat!");
+            
         }
     }
 

@@ -8,29 +8,42 @@ public class CargoBox : MonoBehaviour
     public Transform[] productSlots;
 
     private List<Product> placedProducts = new List<Product>();
-    private Rigidbody rb;
-    private bool isBeingCarried = false; // Kutu taşınıyor mu?
-    private Collider boxCollider; // Kendi Collider’ımız
+    public OrderData assignedOrder;
 
-    void Awake()
+    private Rigidbody rb;
+    private Collider boxCollider;
+    private bool isBeingCarried = false;
+
+    private void Awake()
     {
-        // Rigidbody ve Collider’ı al
         rb = GetComponent<Rigidbody>();
         boxCollider = GetComponent<Collider>();
+    }
 
-        if (rb == null)
-        {
-            Debug.LogError("CargoBox’ta Rigidbody eksik!");
-            return;
-        }
-        if (boxCollider == null)
-        {
-            Debug.LogError("CargoBox’ta Collider eksik!");
-            return;
-        }
+    public void AssignOrder(OrderData order)
+    {
+        assignedOrder = order;
+    }
 
-        // Başlangıçta isKinematic zaten true (Inspector’da ayarlı)
-        Debug.Log($"CargoBox {gameObject.name} başlatıldı. isKinematic: {rb.isKinematic}");
+    public void PlaceInitialProducts(OrderData order)
+    {
+        foreach (var item in order.itemsInOrder)
+        {
+            for (int i = 0; i < item.quantity; i++)
+            {
+                GameObject prefab = item.productDefinition.prefab;
+                if (prefab == null) continue;
+
+                GameObject productObj = Instantiate(prefab);
+                Product product = productObj.GetComponent<Product>();
+
+                if (product != null)
+                {
+                    product.productDefinition = item.productDefinition;
+                    TryPlaceProduct(product);
+                }
+            }
+        }
     }
 
     public bool IsInRange(Vector3 productPosition)
@@ -40,19 +53,28 @@ public class CargoBox : MonoBehaviour
 
     public bool TryPlaceProduct(Product product)
     {
-        if (placedProducts.Count >= productSlots.Length)
+        // Eğer sipariş atanmışsa, sadece o siparişin ürününü al
+        if (assignedOrder != null)
         {
-            Debug.Log("Kargo kutusu dolu.");
-            return false;
+            bool isValid = false;
+            foreach (var item in assignedOrder.itemsInOrder)
+            {
+                if (item.productDefinition.productName == product.productDefinition.productName)
+                {
+                    isValid = true;
+                    break;
+                }
+            }
+
+            if (!isValid)
+                return false;
         }
+
+        if (placedProducts.Count >= productSlots.Length)
+            return false;
 
         int slotIndex = placedProducts.Count;
         Transform slot = productSlots[slotIndex];
-        if (slot == null)
-        {
-            Debug.LogError($"Hata: {gameObject.name} için slot {slotIndex} null!");
-            return false;
-        }
 
         Rigidbody productRb = product.GetComponent<Rigidbody>();
         if (productRb != null)
@@ -62,39 +84,25 @@ public class CargoBox : MonoBehaviour
             productRb.angularVelocity = Vector3.zero;
         }
 
-        // Ürünün Collider’ını kutunun Collider’ıyla çarpışmayacak şekilde ayarla
         Collider productCollider = product.GetComponent<Collider>();
         if (productCollider != null && boxCollider != null)
         {
             Physics.IgnoreCollision(boxCollider, productCollider, true);
-            Debug.Log($"Çarpışma devre dışı bırakıldı: {product.gameObject.name} ile {gameObject.name}");
         }
 
-        // Ürünü slota yerleştir, rotasyonu sabitle
         product.transform.SetParent(slot);
         product.transform.position = slot.position;
-        product.transform.rotation = Quaternion.Euler(0, 0, 0); // Rotasyonu sıfırla
-
-        // Product’ın localScale’ini (1, 1, 1) olarak ayarla
-        product.transform.localScale = Vector3.one; // (1, 1, 1)
-
-        Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildikten sonra rotasyon: {product.transform.rotation.eulerAngles}, Local Ölçek: {product.transform.localScale}, Dünya Ölçeği: {product.transform.lossyScale}");
+        product.transform.rotation = Quaternion.identity;
+        product.transform.localScale = Vector3.one;
 
         placedProducts.Add(product);
-        Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildi.");
-
         return true;
     }
 
     public Product TryRemoveProduct(Vector3 rayOrigin, Vector3 rayDirection, float maxDistance)
     {
-        if (isBeingCarried)
-        {
-            Debug.Log("Kutu taşınıyor, ürün alınamaz!");
-            return null;
-        }
+        if (isBeingCarried) return null;
 
-        // Pickup layer’ını hedefleyen bir raycast yap
         LayerMask pickupLayer = LayerMask.GetMask("Pickup");
         Ray ray = new Ray(rayOrigin, rayDirection);
         if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, pickupLayer))
@@ -105,15 +113,12 @@ public class CargoBox : MonoBehaviour
                 placedProducts.Remove(product);
                 product.transform.SetParent(null);
 
-                // Çarpışmayı tekrar etkinleştir
                 Collider productCollider = product.GetComponent<Collider>();
                 if (productCollider != null && boxCollider != null)
                 {
                     Physics.IgnoreCollision(boxCollider, productCollider, false);
-                    Debug.Log($"Çarpışma etkinleştirildi: {product.gameObject.name} ile {gameObject.name}");
                 }
 
-                // Ürünün fiziksel özelliklerini sıfırla
                 Rigidbody productRb = product.GetComponent<Rigidbody>();
                 if (productRb != null)
                 {
@@ -122,54 +127,33 @@ public class CargoBox : MonoBehaviour
                     productRb.angularVelocity = Vector3.zero;
                 }
 
-                // Ürünün ölçeğini orijinal değerine geri getir
                 product.transform.localScale = product.GetOriginalScale();
-
-                Debug.Log($"{product.gameObject.name} kargo kutusundan alındı. Ölçek: {product.transform.localScale}");
                 return product;
             }
-            else
-            {
-                Debug.Log("Raycast bir Product’a çarptı, ancak bu ürün kutuda değil.");
-            }
         }
-        else
-        {
-            Debug.Log("Raycast hiçbir şeye çarpmadı.");
-        }
+
         return null;
     }
 
-    public bool IsFull()
-    {
-        return placedProducts.Count >= productSlots.Length;
-    }
-
-    // Kutu alındığında çağrılır
     public void OnPickedUp()
     {
         isBeingCarried = true;
-        rb.isKinematic = true; // Zaten true olabilir, ama emin olmak için
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-        Debug.Log($"CargoBox {gameObject.name} alındı.");
+        rb.isKinematic = true;
     }
 
-    // Kutu bırakıldığında çağrılır
     public void OnDropped()
     {
         isBeingCarried = false;
-        rb.isKinematic = false; // Fiziksel etkileşimleri aç
-
-        // Hız ve açısal hızı sıfırla
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-
-        Debug.Log($"CargoBox {gameObject.name} bırakıldı. isKinematic: {rb.isKinematic}, Velocity: {rb.velocity}, AngularVelocity: {rb.angularVelocity}");
+        rb.isKinematic = false;
     }
 
     public bool IsBeingCarried()
     {
         return isBeingCarried;
+    }
+
+    public bool IsFull()
+    {
+        return placedProducts.Count >= productSlots.Length;
     }
 }
