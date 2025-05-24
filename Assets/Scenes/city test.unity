@@ -17205,19 +17205,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bca4f3e234082b48b4f3549e54e4786, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnPoint: {fileID: 948519679}
-  smallBoxSmallVariants:
+  smallBox1Prefabs:
   - {fileID: 6079078626522964483, guid: 9ee3cc16d4e586341b5507917fdbb109, type: 3}
-  smallBoxMediumVariants:
+  smallBox2Prefabs:
   - {fileID: 953579548957754828, guid: 6991ec342bf62054e98da348c0e17020, type: 3}
-  smallBoxLargeVariants:
+  smallBox3to4Prefabs:
   - {fileID: 4482586835161291136, guid: 97c2732feda89814d9ce15bab605576e, type: 3}
-  largeBoxSmallVariants:
+  largeBox1Prefabs:
   - {fileID: 352390974250418652, guid: 038f79b72116bc647ae13e100562fd2c, type: 3}
-  largeBoxMediumVariants:
+  largeBox2Prefabs:
   - {fileID: 4501759661106748143, guid: 1961abd481c58ea40866f41722846dcf, type: 3}
-  largeBoxLargeVariants:
+  largeBox3to4Prefabs:
   - {fileID: 5897297733101658678, guid: 4dd379e95e0a18b4ab30f2b6f7ef1c61, type: 3}
+  spawnPoint: {fileID: 948519679}
 --- !u!1001 &778175202
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18695,87 +18695,87 @@ MonoBehaviour:
   - productName: Coffe Machine
     price: 100
     productPrefab: {fileID: 9013443591587980889, guid: 6564630affbfdcd4993c2c0adc221fab, type: 3}
+    prefab: {fileID: 9013443591587980889, guid: 6564630affbfdcd4993c2c0adc221fab, type: 3}
     quantity: 0
     isLarge: 1
     priceText: {fileID: 1915304876}
-    prefab: {fileID: 9013443591587980889, guid: 6564630affbfdcd4993c2c0adc221fab, type: 3}
   - productName: DayFit Dumbell
     price: 40
     productPrefab: {fileID: 4943149190394174590, guid: 11c1abbbc22716345ab8ecee980496f2, type: 3}
+    prefab: {fileID: 4943149190394174590, guid: 11c1abbbc22716345ab8ecee980496f2, type: 3}
     quantity: 0
     isLarge: 1
     priceText: {fileID: 220941804}
-    prefab: {fileID: 4943149190394174590, guid: 11c1abbbc22716345ab8ecee980496f2, type: 3}
   - productName: Moneydoly
     price: 15
     productPrefab: {fileID: 7103303819142608525, guid: 90f56a4e44453d3499379654ae179258, type: 3}
+    prefab: {fileID: 7103303819142608525, guid: 90f56a4e44453d3499379654ae179258, type: 3}
     quantity: 0
     isLarge: 0
     priceText: {fileID: 1095321101}
-    prefab: {fileID: 7103303819142608525, guid: 90f56a4e44453d3499379654ae179258, type: 3}
   - productName: Harley Termos
     price: 30
     productPrefab: {fileID: 1059213738805224098, guid: 0767bff7e5fe26342982e2d998ed9e8e, type: 3}
+    prefab: {fileID: 1059213738805224098, guid: 0767bff7e5fe26342982e2d998ed9e8e, type: 3}
     quantity: 0
     isLarge: 0
     priceText: {fileID: 1299794521}
-    prefab: {fileID: 1059213738805224098, guid: 0767bff7e5fe26342982e2d998ed9e8e, type: 3}
   - productName: MJI Drone
     price: 75
     productPrefab: {fileID: 6910125235702809442, guid: b9b3c1077d8931240b9997840491e680, type: 3}
+    prefab: {fileID: 6910125235702809442, guid: b9b3c1077d8931240b9997840491e680, type: 3}
     quantity: 0
     isLarge: 1
     priceText: {fileID: 1240287951}
-    prefab: {fileID: 6910125235702809442, guid: b9b3c1077d8931240b9997840491e680, type: 3}
   - productName: MBOX Game Console
     price: 250
     productPrefab: {fileID: 3931625060261406924, guid: a0e07711777ad8c43a301bc60f4f73d5, type: 3}
+    prefab: {fileID: 3931625060261406924, guid: a0e07711777ad8c43a301bc60f4f73d5, type: 3}
     quantity: 0
     isLarge: 1
     priceText: {fileID: 528539057}
-    prefab: {fileID: 3931625060261406924, guid: a0e07711777ad8c43a301bc60f4f73d5, type: 3}
   - productName: M Tech Headset
     price: 35
     productPrefab: {fileID: 4921327257524108906, guid: e1bc8655dec4a1f44ab85bd14d075053, type: 3}
+    prefab: {fileID: 4921327257524108906, guid: e1bc8655dec4a1f44ab85bd14d075053, type: 3}
     quantity: 0
     isLarge: 0
     priceText: {fileID: 1894623090}
-    prefab: {fileID: 4921327257524108906, guid: e1bc8655dec4a1f44ab85bd14d075053, type: 3}
   - productName: Style Pen
     price: 5
     productPrefab: {fileID: 7068894883041317099, guid: 6887146679b1e224c9c6b6acd38eb87f, type: 3}
+    prefab: {fileID: 7068894883041317099, guid: 6887146679b1e224c9c6b6acd38eb87f, type: 3}
     quantity: 0
     isLarge: 0
     priceText: {fileID: 993730947}
-    prefab: {fileID: 7068894883041317099, guid: 6887146679b1e224c9c6b6acd38eb87f, type: 3}
   - productName: DLB Speakers
     price: 40
     productPrefab: {fileID: 1180921624298648734, guid: d3c887176e56eb74eadf1c5cd3169477, type: 3}
+    prefab: {fileID: 1180921624298648734, guid: d3c887176e56eb74eadf1c5cd3169477, type: 3}
     quantity: 0
     isLarge: 1
     priceText: {fileID: 949554758}
-    prefab: {fileID: 1180921624298648734, guid: d3c887176e56eb74eadf1c5cd3169477, type: 3}
   - productName: Surf Toy Gun
     price: 10
     productPrefab: {fileID: 8105012808300197839, guid: 393159cbb76cd584e90637d15a1a6a1e, type: 3}
+    prefab: {fileID: 8105012808300197839, guid: 393159cbb76cd584e90637d15a1a6a1e, type: 3}
     quantity: 0
     isLarge: 1
     priceText: {fileID: 194062484}
-    prefab: {fileID: 8105012808300197839, guid: 393159cbb76cd584e90637d15a1a6a1e, type: 3}
   - productName: View Hero
     price: 85
     productPrefab: {fileID: 6931257682826747847, guid: 77303e01848bf1541b52b666af9005af, type: 3}
+    prefab: {fileID: 6931257682826747847, guid: 77303e01848bf1541b52b666af9005af, type: 3}
     quantity: 0
     isLarge: 0
     priceText: {fileID: 1816614587}
-    prefab: {fileID: 6931257682826747847, guid: 77303e01848bf1541b52b666af9005af, type: 3}
   - productName: Swift Game Console
     price: 150
     productPrefab: {fileID: 3853126437583539925, guid: cb8cb139490613e45a6504904a7373db, type: 3}
+    prefab: {fileID: 3853126437583539925, guid: cb8cb139490613e45a6504904a7373db, type: 3}
     quantity: 0
     isLarge: 0
     priceText: {fileID: 1959223495}
-    prefab: {fileID: 3853126437583539925, guid: cb8cb139490613e45a6504904a7373db, type: 3}
   spawnPoint: {fileID: 1459687995}
   spawnSlots:
   - {fileID: 1925235110}
@@ -30369,7 +30369,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1252034796}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8326a8ad76c115241861188e15f3fab1, type: 3}
   m_Name: 
@@ -47216,6 +47216,7 @@ MonoBehaviour:
   inGameMarket: {fileID: 824855250}
   sellPanel: {fileID: 1033424190}
   timeManager: {fileID: 1252034801}
+  packingStation: {fileID: 777229569}
   pendingOrders: []
 --- !u!1 &1869144540
 GameObject:
