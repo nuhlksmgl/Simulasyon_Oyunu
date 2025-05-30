@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
@@ -10,8 +11,8 @@ public class InGameMarket : MonoBehaviour
     {
         public string productName;
         public int price;
-        public GameObject productPrefab;  // markette görsel olarak kullanılan
-        public GameObject prefab;         // kargo kutusuna yerleştirilecek gerçek ürün prefab
+        public GameObject productPrefab;
+        public GameObject prefab;
         public int quantity = 0;
         public bool isLarge;
         public TextMeshProUGUI priceText;
@@ -222,5 +223,19 @@ public class InGameMarket : MonoBehaviour
                 product.priceText.text = priceString;
             }
         }
+    }
+
+    public MarketProduct GetDefinitionForInstance(GameObject instance)
+    {
+        foreach (var product in products)
+        {
+            if (product.prefab.name == instance.name.Replace("(Clone)", "").Trim())
+            {
+                return product;
+            }
+        }
+
+        Debug.LogWarning($"❌ Tanım bulunamadı: {instance.name}");
+        return null;
     }
 }

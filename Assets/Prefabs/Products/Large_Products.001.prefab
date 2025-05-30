@@ -147,5 +147,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f17fe4be705c964a97ae65991ee4671, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  productDefinition:
+    productName: MJI Drone
+    price: 75
+    productPrefab: {fileID: 6910125235702809442}
+    prefab: {fileID: 6910125235702809442}
+    quantity: 0
+    isLarge: 1
+    priceText: {fileID: 0}
   isPlaced: 0
   isHeld: 1

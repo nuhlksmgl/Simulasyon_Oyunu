@@ -6,44 +6,50 @@ public class CargoBox : MonoBehaviour
     public bool isLargeBox;
     public float detectionRadius = 3f;
     public Transform[] productSlots;
-
-    private List<Product> placedProducts = new List<Product>();
     public OrderData assignedOrder;
 
+    private List<Product> placedProducts = new List<Product>();
     private Rigidbody rb;
-    private Collider boxCollider;
     private bool isBeingCarried = false;
+    private Collider boxCollider;
 
-    private void Awake()
+    void Awake()
     {
         rb = GetComponent<Rigidbody>();
         boxCollider = GetComponent<Collider>();
+        gameObject.tag = "CargoBox";
+
+        if (rb == null)
+        {
+            Debug.LogError("CargoBox’ta Rigidbody eksik!");
+            return;
+        }
+        if (boxCollider == null)
+        {
+            Debug.LogError("CargoBox’ta Collider eksik!");
+            return;
+        }
+
+        // Slot pozisyonlarını kontrol et ve log’a yaz
+        for (int i = 0; i < productSlots.Length; i++)
+        {
+            if (productSlots[i] != null)
+            {
+                Debug.Log($"Slot {i} position: {productSlots[i].position}, scale: {productSlots[i].lossyScale}");
+            }
+            else
+            {
+                Debug.LogWarning($"Slot {i} is null!");
+            }
+        }
+
+        Debug.Log($"CargoBox {gameObject.name} başlatıldı. isKinematic: {rb.isKinematic}");
     }
 
     public void AssignOrder(OrderData order)
     {
         assignedOrder = order;
-    }
-
-    public void PlaceInitialProducts(OrderData order)
-    {
-        foreach (var item in order.itemsInOrder)
-        {
-            for (int i = 0; i < item.quantity; i++)
-            {
-                GameObject prefab = item.productDefinition.prefab;
-                if (prefab == null) continue;
-
-                GameObject productObj = Instantiate(prefab);
-                Product product = productObj.GetComponent<Product>();
-
-                if (product != null)
-                {
-                    product.productDefinition = item.productDefinition;
-                    TryPlaceProduct(product);
-                }
-            }
-        }
+        Debug.Log($"Order assigned to CargoBox {gameObject.name}: {order}");
     }
 
     public bool IsInRange(Vector3 productPosition)
@@ -53,28 +59,19 @@ public class CargoBox : MonoBehaviour
 
     public bool TryPlaceProduct(Product product)
     {
-        // Eğer sipariş atanmışsa, sadece o siparişin ürününü al
-        if (assignedOrder != null)
-        {
-            bool isValid = false;
-            foreach (var item in assignedOrder.itemsInOrder)
-            {
-                if (item.productDefinition.productName == product.productDefinition.productName)
-                {
-                    isValid = true;
-                    break;
-                }
-            }
-
-            if (!isValid)
-                return false;
-        }
-
         if (placedProducts.Count >= productSlots.Length)
+        {
+            Debug.Log("Kargo kutusu dolu.");
             return false;
+        }
 
         int slotIndex = placedProducts.Count;
         Transform slot = productSlots[slotIndex];
+        if (slot == null)
+        {
+            Debug.LogError($"Hata: {gameObject.name} için slot {slotIndex} null!");
+            return false;
+        }
 
         Rigidbody productRb = product.GetComponent<Rigidbody>();
         if (productRb != null)
@@ -88,20 +85,35 @@ public class CargoBox : MonoBehaviour
         if (productCollider != null && boxCollider != null)
         {
             Physics.IgnoreCollision(boxCollider, productCollider, true);
+            productCollider.enabled = true;
+            Debug.Log($"Çarpışma devre dışı bırakıldı: {product.gameObject.name} ile {gameObject.name}");
         }
 
         product.transform.SetParent(slot);
         product.transform.position = slot.position;
-        product.transform.rotation = Quaternion.identity;
+        product.transform.rotation = Quaternion.Euler(0, 0, 0);
         product.transform.localScale = Vector3.one;
 
+        product.gameObject.SetActive(true);
+        Renderer productRenderer = product.GetComponent<Renderer>();
+        if (productRenderer != null)
+            productRenderer.enabled = true;
+        else
+            Debug.LogWarning($"Product {product.name} has no Renderer component!");
+
         placedProducts.Add(product);
+        Debug.Log($"{product.gameObject.name} kargo kutusuna yerleştirildi. Pozisyon: {product.transform.position}, active = {product.gameObject.activeSelf}");
+
         return true;
     }
 
     public Product TryRemoveProduct(Vector3 rayOrigin, Vector3 rayDirection, float maxDistance)
     {
-        if (isBeingCarried) return null;
+        if (isBeingCarried)
+        {
+            Debug.Log("Kutu taşınıyor, ürün alınamaz!");
+            return null;
+        }
 
         LayerMask pickupLayer = LayerMask.GetMask("Pickup");
         Ray ray = new Ray(rayOrigin, rayDirection);
@@ -117,6 +129,7 @@ public class CargoBox : MonoBehaviour
                 if (productCollider != null && boxCollider != null)
                 {
                     Physics.IgnoreCollision(boxCollider, productCollider, false);
+                    Debug.Log($"Çarpışma etkinleştirildi: {product.gameObject.name} ile {gameObject.name}");
                 }
 
                 Rigidbody productRb = product.GetComponent<Rigidbody>();
@@ -128,32 +141,52 @@ public class CargoBox : MonoBehaviour
                 }
 
                 product.transform.localScale = product.GetOriginalScale();
+
+                product.gameObject.SetActive(true);
+                Renderer productRenderer = product.GetComponent<Renderer>();
+                if (productRenderer != null)
+                    productRenderer.enabled = true;
+
+                Debug.Log($"{product.gameObject.name} kargo kutusundan alındı. Ölçek: {product.transform.localScale}, active = {product.gameObject.activeSelf}");
                 return product;
             }
+            else
+            {
+                Debug.Log("Raycast bir Product’a çarptı, ancak bu ürün kutuda değil.");
+            }
         }
-
+        else
+        {
+            Debug.Log("Raycast hiçbir şeye çarpmadı.");
+        }
         return null;
+    }
+
+    public bool IsFull()
+    {
+        return placedProducts.Count >= productSlots.Length;
     }
 
     public void OnPickedUp()
     {
         isBeingCarried = true;
         rb.isKinematic = true;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        Debug.Log($"CargoBox {gameObject.name} alındı.");
     }
 
     public void OnDropped()
     {
         isBeingCarried = false;
         rb.isKinematic = false;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        Debug.Log($"CargoBox {gameObject.name} bırakıldı. isKinematic: {rb.isKinematic}, Velocity: {rb.velocity}, AngularVelocity: {rb.angularVelocity}");
     }
 
     public bool IsBeingCarried()
     {
         return isBeingCarried;
-    }
-
-    public bool IsFull()
-    {
-        return placedProducts.Count >= productSlots.Length;
     }
 }
