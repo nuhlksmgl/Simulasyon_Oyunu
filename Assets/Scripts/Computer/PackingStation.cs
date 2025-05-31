@@ -60,11 +60,15 @@ public class PackingStation : MonoBehaviour
         Quaternion spawnRotation = spawnPoint.rotation * Quaternion.Euler(-90f, 0f, 0f);
         currentBox = Instantiate(selectedPrefab, spawnPoint.position, spawnRotation);
 
-
         CargoBox cargoBox = currentBox.GetComponent<CargoBox>();
         if (cargoBox != null)
         {
-            cargoBox.AssignOrder(order); // ❗ ürünler otomatik olarak konmaz
+            cargoBox.AssignOrder(order);
+            Debug.Log($"CargoBox {currentBox.name} için sipariş atandı: {order.orderID}");
+        }
+        else
+        {
+            Debug.LogError($"CargoBox componenti bulunamadı: {currentBox.name}");
         }
     }
 }

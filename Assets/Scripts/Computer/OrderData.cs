@@ -2,25 +2,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// OrderData.cs içindeki OrderItemDetail sýnýfý
+
 [System.Serializable]
 public class OrderItemDetail
 {
     public InGameMarket.MarketProduct productDefinition;
     public int quantity;
     public int unitSellPriceAtOrderTime;
+    public int marketPriceAtOrderTime;   // <--- YENÝ EKLENEN ALAN
 
-    public OrderItemDetail(InGameMarket.MarketProduct productDef, int qty, int price)
+    // Constructor'ý da güncelle
+    public OrderItemDetail(InGameMarket.MarketProduct productDef, int qty, int sellPrice, int marketPrice) // marketPrice parametresi eklendi
     {
         productDefinition = productDef;
         quantity = qty;
-        unitSellPriceAtOrderTime = price;
+        unitSellPriceAtOrderTime = sellPrice;
+        marketPriceAtOrderTime = marketPrice; // <--- YENÝ ATAMA
     }
 }
 
 public enum OrderStatus
 {
     Yeni,
-    Hazýrlanýyor,
+    Hazirlaniyor,
     Paketlendi,
     Kargoda,
     TeslimEdildi,

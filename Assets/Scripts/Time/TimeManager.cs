@@ -3,70 +3,109 @@ using TMPro;
 
 public class TimeManager : MonoBehaviour
 {
-    // Zaman ayarlarý
-    public float timeMultiplier = 60f; // Oyun zamaný hýzý (örneðin, gerçek 1 saniye = oyun içi 1 dakika)
+    // Event: Yeni bir gün baþladýðýnda tetiklenir.
+    public static event System.Action OnNewDayStarted;
 
-    // Oyun zamaný
-    public int currentHour = 7;       // Baþlangýç saati
-    public int currentMinute = 0;    // Baþlangýç dakikasý
-    private int currentDay = 1;       // Baþlangýç günü
+    [Header("Zaman Ayarlarý")]
+    [Tooltip("Oyun zamanýnýn gerçek zamana göre ne kadar hýzlý akacaðýný belirler. 1 = Gerçek zamanlý, 60 = Gerçek 1 saniye oyun içi 1 dakika.")]
+    public float timeMultiplier = 60f;
 
-    // UI için referanslar
-    public TMP_Text timeText;         // Zamaný göstermek için TextMeshPro referansý
-    public TMP_Text dayText;          // Günü göstermek için TextMeshPro referansý
+    [Header("Baþlangýç Zamaný")]
+    [Range(0, 23)]
+    public int startHour = 7;    // Baþlangýç saati
+    [Range(0, 59)]
+    public int startMinute = 0;  // Baþlangýç dakikasý
+    public int startDay = 1;     // Baþlangýç günü
 
-    private float elapsedTime = 0f;   // Geçen süre (zamanýn ilerleyiþini takip eder)
-    private bool hasDayChanged = false; // Gün deðiþimini kontrol etmek için bayrak
+    // Oyun zamaný (dýþarýdan sadece okunabilir)
+    public int CurrentHour { get; private set; }
+    public int CurrentMinute { get; private set; }
+    public int CurrentDay { get; private set; }
+
+    [Header("UI Referanslarý")]
+    public TMP_Text timeText;
+    public TMP_Text dayText;
+
+    private float secondsPassedInGameTime = 0f; // Oyun baþladýðýndan beri geçen toplam oyun saniyesi
+
+    void Awake()
+    {
+        // Baþlangýç deðerlerini ata
+        CurrentHour = startHour;
+        CurrentMinute = startMinute;
+        CurrentDay = startDay;
+
+        // Baþlangýç zamanýný toplam saniyeye çevir (oyun zamaný cinsinden)
+        secondsPassedInGameTime = (CurrentHour * 3600f) + (CurrentMinute * 60f);
+    }
 
     void Start()
     {
-        // Baþlangýç zamaný ayarla
-        elapsedTime = (currentHour * 60) * 60f; // Saatleri saniyeye çevirip baþlangýç zamaný olarak ekle
-        currentMinute = 0; // Dakikalar baþlangýçta sýfýr
-        currentDay = 1;    // Baþlangýç günü 1
-
-        // Baþlangýç zaman bilgilerini konsola yazdýr
-        
+        UpdateUI(); // Baþlangýç UI'ýný ayarla
+        Debug.Log($"TimeManager Baþlatýldý. Gün: {CurrentDay}, Saat: {CurrentHour:D2}:{CurrentMinute:D2}");
+        // Ýlk gün için event'i tetikle (eðer bazý sistemler baþlangýçta gün bilgisine ihtiyaç duyuyorsa)
+        // OnNewDayStarted?.Invoke(); // Veya ilk günün zaten baþladýðý varsayýlýr.
     }
 
     void Update()
     {
-        UpdateGameTime();  // Oyun içi zamaný güncelle
-        UpdateUI();        // UI'yi güncelle
+        UpdateGameTime();
+        UpdateUI();
     }
 
     void UpdateGameTime()
     {
-        // Geçen süreyi hesapla
-        elapsedTime += Time.deltaTime * timeMultiplier;
+        // Gerçek saniyeyi oyun zamaný çarpanýyla artýrarak oyun saniyesini ilerlet
+        secondsPassedInGameTime += Time.deltaTime * timeMultiplier;
 
-        // Dakika ve saat hesaplama
-        int totalMinutes = Mathf.FloorToInt(elapsedTime / 60); // Toplam saniyeyi dakikaya çevir
-        currentMinute = totalMinutes % 60;
-        currentHour = (totalMinutes / 60) % 24;
+        // Toplam oyun saniyesinden güncel saat, dakika ve günü hesapla
+        int totalGameSeconds = Mathf.FloorToInt(secondsPassedInGameTime);
 
-        // Gün deðiþimi kontrolü
-        if (currentHour == 0 && currentMinute == 0 && !hasDayChanged)
+        int previousDay = CurrentDay; // Gün deðiþimi kontrolü için
+
+        CurrentDay = startDay + (totalGameSeconds / 86400); // 86400 saniye = 24 saat
+        int secondsInCurrentDay = totalGameSeconds % 86400;
+
+        CurrentHour = secondsInCurrentDay / 3600;
+        int secondsInCurrentHour = secondsInCurrentDay % 3600;
+        CurrentMinute = secondsInCurrentHour / 60;
+        // int currentSecond = secondsInCurrentHour % 60; // Saniyeyi de istersen tutabilirsin
+
+        if (CurrentDay > previousDay)
         {
-            currentDay++;
-            hasDayChanged = true; // Gün deðiþimini tetikledikten sonra bayraðý kaldýr
-            
-        }
-
-        // Gün deðiþim bayraðýný sýfýrla
-        if (currentHour != 0 || currentMinute != 0)
-        {
-            hasDayChanged = false;
+            Debug.Log($"YENÝ GÜN BAÞLADI: Gün {CurrentDay}");
+            OnNewDayStarted?.Invoke(); // Yeni gün event'ini tetikle
         }
     }
 
     void UpdateUI()
     {
-        // Saat ve dakikayý "HH:MM" formatýnda ayarla
-        string formattedTime = string.Format("{0:00}:{1:00}", currentHour, currentMinute);
-        timeText.text = "Time: " + formattedTime;
+        if (timeText != null)
+        {
+            string formattedTime = string.Format("{0:00}:{1:00}", CurrentHour, CurrentMinute);
+            timeText.text = "Saat: " + formattedTime;
+        }
 
-        // Gün sayýsýný UI'ye yaz
-        dayText.text = "Day: " + currentDay;
+        if (dayText != null)
+        {
+            dayText.text = "Gün: " + CurrentDay;
+        }
+    }
+
+    /// <summary>
+    /// Mevcut oyun içi zamaný toplam dakika cinsinden döndürür (günün baþýndan itibaren).
+    /// CustomerOrderManager gibi script'ler sipariþ zaman damgalarý için kullanabilir.
+    /// </summary>
+    public float GetCurrentTimeInMinutesOfDay()
+    {
+        return CurrentHour * 60f + CurrentMinute;
+    }
+
+    /// <summary>
+    /// Oyun baþladýðýndan beri geçen toplam oyun içi dakikayý döndürür.
+    /// </summary>
+    public float GetTotalMinutesPassedInGame()
+    {
+        return secondsPassedInGameTime / 60f;
     }
 }
