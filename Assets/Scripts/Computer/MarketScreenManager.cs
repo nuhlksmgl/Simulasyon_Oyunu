@@ -2,30 +2,38 @@
 
 public class MarketScreenManager : MonoBehaviour
 {
-    public GameObject mainMenu;
-    public GameObject buyPanel;
-    public GameObject sellPanel;
-    public GameObject orderListPanel; // Sipariş listesi paneli için referans
+    [SerializeField] private GameObject mainMenu;
+    [SerializeField] private GameObject buyPanel;
+    [SerializeField] private GameObject sellPanel;
+    [SerializeField] private GameObject orderListPanel;
 
-    public InGameMarket inGameMarket;
-    public SellPanel sellPanelScript;
-    public OrderListPanelUI orderListPanelUI; // Sipariş panelini kontrol edecek script referansı
+    [SerializeField] private InGameMarket inGameMarket;
+    [SerializeField] private SellPanel sellPanelScript;
+    [SerializeField] private OrderListPanelUI orderListPanelUI;
+
+    void Awake()
+    {
+        if (mainMenu == null || buyPanel == null || sellPanel == null || orderListPanel == null)
+        {
+            Debug.LogError("MarketScreenManager: Panel referanslarından biri eksik!");
+        }
+        if (inGameMarket == null || sellPanelScript == null || orderListPanelUI == null)
+        {
+            Debug.LogError("MarketScreenManager: Script referanslarından biri eksik!");
+        }
+    }
 
     void Start()
     {
-        // Başlangıçta tüm panelleri kapatmak iyi bir pratik olabilir.
-        // CanvasControl script'i zaten canvas'ı kapatıyorsa, burası sadece panelleri kapatır.
         CloseAllPanels();
     }
 
-    // Tüm UI panellerini kapatmak için yardımcı bir metod
     void CloseAllPanels()
     {
         mainMenu?.SetActive(false);
         buyPanel?.SetActive(false);
         sellPanel?.SetActive(false);
         orderListPanel?.SetActive(false);
-        // Varsa diğer paneller de buraya eklenebilir (örn: SiparisDetayPaneli)
     }
 
     public void ShowMainMenu()
@@ -33,13 +41,6 @@ public class MarketScreenManager : MonoBehaviour
         CloseAllPanels();
         if (mainMenu != null) mainMenu.SetActive(true);
         else Debug.LogError("MarketScreenManager: MainMenu referansı atanmamış!");
-
-        // Ana menüye dönüldüğünde SellPanel'in güncel olması iyi olabilir.
-        if (sellPanelScript != null)
-        {
-            // sellPanelScript.UpdateSellPanel(); // Gerekliyse veya SellPanel OnEnable'da güncelleniyorsa
-        }
-        // Debug.Log("Ana menü gösterildi.");
     }
 
     public void ShowBuyPanel()
@@ -50,11 +51,10 @@ public class MarketScreenManager : MonoBehaviour
 
         if (inGameMarket != null)
         {
-            inGameMarket.SetupBuyButtons(); // Toptancı butonlarını ayarla
-            inGameMarket.UpdatePriceUI_BuyPanel(); // Toptancı fiyatlarını güncelle
+            inGameMarket.SetupBuyButtons();
+            inGameMarket.UpdatePriceUI_BuyPanel();
         }
         else Debug.LogError("MarketScreenManager: InGameMarket referansı atanmamış!");
-        // Debug.Log("Satın alma paneli gösterildi.");
     }
 
     public void ShowSellPanel()
@@ -65,10 +65,9 @@ public class MarketScreenManager : MonoBehaviour
 
         if (sellPanelScript != null)
         {
-            sellPanelScript.UpdateSellPanel(); // Satış panelini açarken UI'ı güncelle
+            sellPanelScript.UpdateSellPanel();
         }
         else Debug.LogError("MarketScreenManager: SellPanelScript referansı atanmamış!");
-        // Debug.Log("Satış paneli gösterildi.");
     }
 
     public void ShowOrderListPanel()
@@ -79,34 +78,22 @@ public class MarketScreenManager : MonoBehaviour
 
         if (orderListPanelUI != null)
         {
-            // OrderListPanelUI'ın Show metodu zaten RefreshOrderList'i veya
-            // OnEnable üzerinden listeyi güncellemeyi tetikliyor olmalı.
             orderListPanelUI.Show();
         }
-        else
-        {
-            Debug.LogError("MarketScreenManager: OrderListPanelUI referansı atanmamış!");
-        }
-        // Debug.Log("Sipariş listesi paneli gösterildi.");
+        else Debug.LogError("MarketScreenManager: OrderListPanelUI referansı atanmamış!");
     }
 
-    // Bu metod, CanvasControl tarafından tüm bilgisayar arayüzü kapatıldığında çağrılır.
     public void CloseCanvas()
     {
-        CloseAllPanels(); // Tüm alt panelleri kapat
-
-        // Toptancıdan sepete eklenen ürünlerin işlenmesi (kutuların spawn edilmesi)
-        // Canvas kapatıldığında gerçekleşir.
+        CloseAllPanels();
         if (inGameMarket != null)
         {
-            // --- HATA BURADAYDI: ProcessOrders -> ProcessPurchaseBasket olarak değiştirildi ---
             inGameMarket.ProcessPurchaseBasket();
-            // --- DÜZELTME SONU ---
         }
         else
         {
-            Debug.LogError("MarketScreenManager - CloseCanvas: InGameMarket referansı atanmamış, toptancı sepeti işlenemedi!");
+            Debug.LogError("MarketScreenManager: InGameMarket referansı atanmamış, toptancı sepeti işlenemedi!");
         }
-        // Debug.Log("MarketScreenManager: CloseCanvas çağrıldı, tüm paneller kapatıldı ve toptancı sepeti işlendi.");
+        Debug.Log("MarketScreenManager: CloseCanvas çağrıldı, tüm paneller kapatıldı ve toptancı sepeti işlendi.");
     }
 }

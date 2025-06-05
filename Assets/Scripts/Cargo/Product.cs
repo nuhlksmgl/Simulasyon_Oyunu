@@ -3,28 +3,40 @@
 public class Product : MonoBehaviour
 {
     public InGameMarket.MarketProduct productDefinition;
-    public bool isHeld = false;  // Eksik olan değişken eklendi
-    private Vector3 originalScale;
+    public bool isHeld = false;
+    private Vector3 originalWorldScale;
 
     private void Awake()
     {
-        originalScale = transform.localScale;
+        // Instantiate edildiğinde localScale = lossyScale, çünkü ebeveyn yok
+        originalWorldScale = transform.localScale;
+        transform.localScale = originalWorldScale; // Prefab ölçeğini sıfırla
+        Debug.Log($"Product {name} orijinal dünya ölçeği kaydedildi: {originalWorldScale}");
+
         gameObject.tag = "Pickup";
+
+        if (productDefinition == null)
+        {
+            Debug.LogWarning($"Product {name} için productDefinition atanmamış!");
+        }
     }
 
     public void OnPickedUp()
     {
         isHeld = true;
+        Debug.Log($"Product {name} alındı.");
     }
 
     public void ResetPosition()
     {
         isHeld = false;
-        transform.localScale = originalScale;
+        transform.localScale = originalWorldScale;
+        Debug.Log($"Product {name} pozisyonu sıfırlandı, ölçek: {originalWorldScale}");
     }
 
-    public Vector3 GetOriginalScale()
+    public Vector3 GetOriginalWorldScale()
     {
-        return originalScale;
+        Debug.Log($"Product {name} orijinal dünya ölçeği döndürüyor: {originalWorldScale}");
+        return originalWorldScale;
     }
 }

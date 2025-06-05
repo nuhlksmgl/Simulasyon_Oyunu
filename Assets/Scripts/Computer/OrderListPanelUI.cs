@@ -1,110 +1,77 @@
 ﻿using UnityEngine;
-using TMPro;
 using UnityEngine.UI;
-using System.Collections.Generic;
-using System.Text; // StringBuilder için
-using System.Linq; // FirstOrDefault gibi kullanımlar için (ileride gerekirse)
+using TMPro;
+using System.Text;
+using System.Linq;
+using System.Collections.Generic; // CS0246 için eklendi
 
 public class OrderListPanelUI : MonoBehaviour
 {
     [Header("Bağlantılar")]
-    public CustomerOrderManager customerOrderManager;
-    public GameObject siparisSatiriPrefab; // Inspector'dan atanacak UI prefab'ı
-    public Transform scrollviewContentParent; // ScrollView'in Content objesi
-    public PackingStation packingStation;
-    public MarketScreenManager marketScreenManager; // Paneli kapatmak için
+    [SerializeField] private CustomerOrderManager orderManager;
+    [SerializeField] private GameObject siparisSatiriPrefab;
+    [SerializeField] private Transform scrollviewContentParent;
+    [SerializeField] private PackingStation packingStation;
+    [SerializeField] private MarketScreenManager marketScreenManager;
+    [SerializeField] private GameObject slipPrefab;
+    [SerializeField] private Transform printerPosition;
 
     void Awake()
     {
-        // Referansları Awake'te bulmak veya kontrol etmek daha güvenli olabilir
-        // Eğer Inspector'dan atanacaksa bu FindObjectOfType çağrılarına gerek kalmayabilir.
-        // Ancak atanmamışsa diye bir güvenlik önlemi olarak eklenebilir.
-        if (customerOrderManager == null)
-            customerOrderManager = FindObjectOfType<CustomerOrderManager>();
-        if (packingStation == null)
-            packingStation = FindObjectOfType<PackingStation>();
-        if (marketScreenManager == null)
-            marketScreenManager = FindObjectOfType<MarketScreenManager>();
+        if (orderManager == null) orderManager = FindObjectOfType<CustomerOrderManager>();
+        if (packingStation == null) packingStation = FindObjectOfType<PackingStation>();
+        if (marketScreenManager == null) marketScreenManager = FindObjectOfType<MarketScreenManager>();
+        if (slipPrefab == null) Debug.LogError("Slip Prefab atanmamış!");
+        if (printerPosition == null) Debug.LogError("Printer Position atanmamış!");
 
-        if (customerOrderManager == null)
-            Debug.LogError("OrderListPanelUI: Awake - CustomerOrderManager referansı bulunamadı veya atanmamış!");
-        if (packingStation == null)
-            Debug.LogError("OrderListPanelUI: Awake - PackingStation referansı bulunamadı veya atanmamış!");
-        if (marketScreenManager == null)
-            Debug.LogError("OrderListPanelUI: Awake - MarketScreenManager referansı bulunamadı veya atanmamış!");
+        if (orderManager == null) { Debug.LogError("CustomerOrderManager referansı bulunamadı!"); enabled = false; }
+        if (packingStation == null) { Debug.LogError("PackingStation referansı bulunamadı!"); }
+        if (marketScreenManager == null) { Debug.LogError("MarketScreenManager referansı bulunamadı!"); }
     }
 
     void OnEnable()
     {
-        if (customerOrderManager == null)
-        {
-            Debug.LogError("OrderListPanelUI: OnEnable - CustomerOrderManager referansı null! Panel düzgün çalışmayabilir. Lütfen Inspector'dan atayın.");
-            gameObject.SetActive(false); // Kendini devre dışı bırak
-            return;
-        }
-        // Statik event'e sınıf adı üzerinden abone ol
         CustomerOrderManager.OnOrderListChanged += HandleOrderListChanged;
-        Debug.Log("OrderListPanelUI OnEnable: CustomerOrderManager.OnOrderListChanged event'ine abone olundu.");
-        RefreshOrderList(); // Panel açıldığında listeyi hemen güncelle
+        Debug.Log("OrderListPanelUI OnEnable: OnOrderListChanged event'ine abone olundu.");
+        RefreshOrderList();
     }
 
     void OnDisable()
     {
-        // Statik event'ten sınıf adı üzerinden abonelikten çık
-        // CustomerOrderManager objesi yok edilmiş olsa bile static event'e erişmeye çalışmak sorun yaratmaz,
-        // ama event'in kendisi null olabilir (hiç abone olmadıysa veya tüm aboneler çıktıysa).
-        // Genellikle bu kontrol gereksizdir ama ekstra güvenlik için yapılabilir.
-        // En önemlisi, CustomerOrderManager.Instance gibi bir şeye ihtiyaç olmaması.
         CustomerOrderManager.OnOrderListChanged -= HandleOrderListChanged;
-        Debug.Log("OrderListPanelUI OnDisable: CustomerOrderManager.OnOrderListChanged event aboneliği kaldırıldı.");
+        Debug.Log("OrderListPanelUI OnDisable: OnOrderListChanged event aboneliği kaldırıldı.");
     }
 
     private void HandleOrderListChanged()
     {
-        Debug.Log("OrderListPanelUI: HandleOrderListChanged çağrıldı (CustomerOrderManager.OnOrderListChanged event'i ile). Liste yenileniyor.");
+        Debug.Log("HandleOrderListChanged çağrıldı. Liste yenileniyor.");
         RefreshOrderList();
     }
 
-    // Bu metod MarketScreenManager tarafından çağrılarak paneli görünür yapar.
     public void Show()
     {
         Debug.Log("OrderListPanelUI: Show() metodu çağrıldı.");
         gameObject.SetActive(true);
-        // OnEnable metodu zaten RefreshOrderList'i çağıracağı için burada tekrar çağırmak genellikle gereksizdir.
-        // Ancak panel zaten aktifken Show çağrılırsa OnEnable tetiklenmeyeceği için
-        // bir RefreshOrderList() çağrısı burada da mantıklı olabilir.
-        // RefreshOrderList(); // Eğer OnEnable dışında da anlık güncelleme isteniyorsa.
     }
 
     public void RefreshOrderList()
     {
-        if (customerOrderManager == null || siparisSatiriPrefab == null || scrollviewContentParent == null)
+        if (orderManager == null || siparisSatiriPrefab == null || scrollviewContentParent == null)
         {
-            Debug.LogError("OrderListPanelUI - RefreshOrderList: Temel referanslardan biri (CustomerOrderManager, SiparisSatiriPrefab, ScrollviewContentParent) atanmamış! Lütfen Inspector'dan kontrol edin.");
+            Debug.LogError("RefreshOrderList: Temel referanslardan biri eksik!");
             return;
         }
 
-        // Debug.Log("OrderListPanelUI: RefreshOrderList başlıyor...");
-
-        // Önce mevcut tüm sipariş satırlarını temizle
         foreach (Transform child in scrollviewContentParent)
         {
             Destroy(child.gameObject);
         }
 
-        List<OrderData> orders = customerOrderManager.GetPendingOrders();
+        List<OrderData> orders = orderManager.GetPendingOrders();
         if (orders == null)
         {
-            Debug.LogWarning("OrderListPanelUI: GetPendingOrders() null bir liste döndürdü.");
+            Debug.LogWarning("GetPendingOrders() null döndürdü.");
             return;
-        }
-
-        // Debug.Log($"OrderListPanelUI: Gösterilecek sipariş sayısı: {orders.Count}");
-
-        if (orders.Count == 0)
-        {
-            // Opsiyonel: "Gösterilecek sipariş yok" mesajı için bir UI elemanı aktif edilebilir.
-            // Debug.Log("OrderListPanelUI: Gösterilecek bekleyen sipariş bulunmuyor.");
         }
 
         foreach (OrderData order in orders)
@@ -112,21 +79,18 @@ public class OrderListPanelUI : MonoBehaviour
             GameObject satirInstance = Instantiate(siparisSatiriPrefab, scrollviewContentParent);
             if (satirInstance == null)
             {
-                Debug.LogError("Sipariş satırı prefab'ı Instantiate edilemedi! Prefab doğru atanmış mı?");
+                Debug.LogError("Sipariş satırı prefab'ı Instantiate edilemedi!");
                 continue;
             }
 
-            // --- PREFAB İÇİNDEKİ UI ELEMANLARININ İSİMLERİNİN DOĞRULUĞUNU KONTROL ET ---
-            // İsimler prefab'ınızdaki TextMeshPro ve Button objelerinin isimleriyle BİREBİR AYNI OLMALIDIR.
             TextMeshProUGUI siparisNoText = satirInstance.transform.Find("SiparisNo")?.GetComponent<TextMeshProUGUI>();
             TextMeshProUGUI urunAdlariText = satirInstance.transform.Find("UrunAdlari")?.GetComponent<TextMeshProUGUI>();
             TextMeshProUGUI siparisDurumuText = satirInstance.transform.Find("SiparisDurumu")?.GetComponent<TextMeshProUGUI>();
             TextMeshProUGUI toplamTutarText = satirInstance.transform.Find("ToplamTutar")?.GetComponent<TextMeshProUGUI>();
             Button hazirlaButton = satirInstance.transform.Find("HazirlaButton")?.GetComponent<Button>();
-            // --- PREFAB İÇİNDEKİ İSİMLERİN DOĞRULUĞUNU KONTROL ET ---
 
             if (siparisNoText != null) siparisNoText.text = $"Sip. No: {order.orderID}";
-            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabı içinde 'SiparisNo_Text' isimli TextMeshPro objesi bulunamadı veya TextMeshPro component'i eksik!");
+            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabında 'SiparisNo' eksik!");
 
             if (urunAdlariText != null)
             {
@@ -136,39 +100,33 @@ public class OrderListPanelUI : MonoBehaviour
                     for (int i = 0; i < order.itemsInOrder.Count; i++)
                     {
                         var item = order.itemsInOrder[i];
-                        if (item.productDefinition != null)
-                        {
-                            builder.Append($"{item.quantity} x {item.productDefinition.productName}");
-                        }
-                        else { builder.Append($"{item.quantity} x [Bilinmeyen Ürün]"); }
-
-                        if (i < order.itemsInOrder.Count - 1) builder.Append("\n"); // Ürünleri alt alta listele
+                        builder.Append($"{item.quantity} x {item.productDefinition?.productName ?? "[Bilinmeyen Ürün]"}");
+                        if (i < order.itemsInOrder.Count - 1) builder.Append("\n");
                     }
                 }
                 else { builder.Append("Ürün Yok"); }
                 urunAdlariText.text = builder.ToString();
             }
-            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabı içinde 'UrunAdlari_Text' isimli TextMeshPro objesi bulunamadı veya TextMeshPro component'i eksik!");
+            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabında 'UrunAdlari' eksik!");
 
-            if (siparisDurumuText != null) siparisDurumuText.text = $"Durum: {order.status.ToString()}";
-            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabı içinde 'SiparisDurumu_Text' isimli TextMeshPro objesi bulunamadı veya TextMeshPro component'i eksik!");
+            if (siparisDurumuText != null) siparisDurumuText.text = $"Durum: {order.status}";
+            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabında 'SiparisDurumu' eksik!");
 
             if (toplamTutarText != null) toplamTutarText.text = $"Tutar: {order.totalOrderValue}₺";
-            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabı içinde 'ToplamTutar_Text' isimli TextMeshPro objesi bulunamadı veya TextMeshPro component'i eksik!");
+            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabında 'ToplamTutar' eksik!");
 
             if (hazirlaButton != null)
             {
-                hazirlaButton.interactable = (order.status == OrderStatus.Yeni); // Sadece "Yeni" siparişler hazırlanabilir
-                hazirlaButton.onClick.RemoveAllListeners(); // Önceki listener'ları temizle
-                OrderData currentOrderForButton = order; // Lambda için order'ı yakala
-                hazirlaButton.onClick.AddListener(() => OnHazirlaButtonClicked(currentOrderForButton));
+                hazirlaButton.interactable = (order.status == OrderStatus.Yeni);
+                hazirlaButton.onClick.RemoveAllListeners();
+                OrderData currentOrder = order;
+                hazirlaButton.onClick.AddListener(() => OnHazirlaButtonClicked(currentOrder));
             }
-            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabı içinde 'HazirlaButton' isimli Button objesi bulunamadı veya Button component'i eksik!");
+            else Debug.LogWarning($"'{siparisSatiriPrefab.name}' prefabında 'HazirlaButton' eksik!");
         }
-        // Debug.Log("OrderListPanelUI: RefreshOrderList tamamlandı.");
     }
 
-    void OnHazirlaButtonClicked(OrderData order)
+    private void OnHazirlaButtonClicked(OrderData order)
     {
         if (order == null)
         {
@@ -177,33 +135,56 @@ public class OrderListPanelUI : MonoBehaviour
         }
         Debug.Log($"Hazırla butonuna tıklandı: Sipariş ID {order.orderID}, Durum: {order.status}");
 
-        if (ActiveOrderManager.Instance == null)
+        try
         {
-            Debug.LogError("ActiveOrderManager.Instance bulunamadı! Lütfen sahnede bir ActiveOrderManager olduğundan ve Instance'ının doğru set edildiğinden emin olun.");
-            return;
-        }
-        ActiveOrderManager.Instance.SetActiveOrder(order);
+            if (ActiveOrderManager.Instance == null)
+            {
+                Debug.LogError("ActiveOrderManager.Instance bulunamadı!");
+                return;
+            }
+            ActiveOrderManager.Instance.SetActiveOrder(order);
 
-        if (customerOrderManager == null)
-        {
-            Debug.LogError("OnHazirlaButtonClicked: CustomerOrderManager referansı null!");
-            return;
+            orderManager.UpdateOrderStatus(order.orderID, OrderStatus.Hazirlaniyor);
+            PrintSlipForOrder(order); // Slip basımı
+            packingStation.SpawnCargoBoxForOrder(order);
+            marketScreenManager.CloseCanvas();
         }
-        customerOrderManager.UpdateOrderStatus(order.orderID, OrderStatus.Hazirlaniyor);
-        // UpdateOrderStatus zaten OnOrderListChanged event'ini tetikleyeceği için liste güncellenecektir.
+        catch (System.Exception e)
+        {
+            Debug.LogError($"OnHazirlaButtonClicked sırasında hata: {e.Message}");
+        }
+    }
 
-        if (packingStation == null)
+    private void PrintSlipForOrder(OrderData order)
+    {
+        if (order == null)
         {
-            Debug.LogError("PackingStation referansı OrderListPanelUI'da atanmamış!");
+            Debug.LogWarning("PrintSlipForOrder: Order verisi null!");
             return;
         }
-        packingStation.SpawnCargoBoxForOrder(order); // Bu sipariş için boş kutu spawn et
+        if (slipPrefab == null || printerPosition == null)
+        {
+            Debug.LogError("Slip Prefab veya Printer Position atanmamış!");
+            return;
+        }
 
-        if (marketScreenManager == null)
+        try
         {
-            Debug.LogWarning("MarketScreenManager referansı atanmamış, bilgisayar canvas'ı kapatılamadı.");
-            return;
+            GameObject slipInstance = Instantiate(slipPrefab, printerPosition.position + Vector3.up * 0.1f, Quaternion.identity);
+            Slip slip = slipInstance.GetComponent<Slip>();
+            if (slip != null)
+            {
+                slip.SetOrderData(order);
+                Debug.Log($"Slip oluşturuldu: Sipariş ID {order.orderID}, Pozisyon: {slipInstance.transform.position}");
+            }
+            else
+            {
+                Debug.LogError("Slip objesinde Slip script’i eksik!");
+            }
         }
-        marketScreenManager.CloseCanvas(); // Bilgisayar arayüzünü kapat, oyuncu paketlemeye gitsin
+        catch (System.Exception e)
+        {
+            Debug.LogError($"PrintSlipForOrder sırasında hata: {e.Message}");
+        }
     }
 }

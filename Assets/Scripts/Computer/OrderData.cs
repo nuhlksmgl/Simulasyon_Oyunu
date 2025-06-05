@@ -1,8 +1,5 @@
-
 using System.Collections.Generic;
 using UnityEngine;
-
-// OrderData.cs içindeki OrderItemDetail sýnýfý
 
 [System.Serializable]
 public class OrderItemDetail
@@ -10,15 +7,14 @@ public class OrderItemDetail
     public InGameMarket.MarketProduct productDefinition;
     public int quantity;
     public int unitSellPriceAtOrderTime;
-    public int marketPriceAtOrderTime;   // <--- YENÝ EKLENEN ALAN
+    public int marketPriceAtOrderTime;
 
-    // Constructor'ý da güncelle
-    public OrderItemDetail(InGameMarket.MarketProduct productDef, int qty, int sellPrice, int marketPrice) // marketPrice parametresi eklendi
+    public OrderItemDetail(InGameMarket.MarketProduct productDef, int qty, int sellPrice, int marketPrice)
     {
         productDefinition = productDef;
         quantity = qty;
         unitSellPriceAtOrderTime = sellPrice;
-        marketPriceAtOrderTime = marketPrice; // <--- YENÝ ATAMA
+        marketPriceAtOrderTime = marketPrice;
     }
 }
 
@@ -29,7 +25,7 @@ public enum OrderStatus
     Paketlendi,
     Kargoda,
     TeslimEdildi,
-    ÝptalEdildi
+    IptalEdildi
 }
 
 public enum OrderType
@@ -57,11 +53,17 @@ public class OrderData
         orderID = System.Guid.NewGuid().ToString().Substring(0, 8);
         itemsInOrder = new List<OrderItemDetail>();
         status = OrderStatus.Yeni;
-        // customerName artýk InitializeCustomer() ile atanýyor
+        customerName = "";
+        orderTimestamp = 0f;
+        dueTimestamp = 0f;
+        orderType = OrderType.Standart;
+        totalOrderValue = 0;
+        timeMultiplierAtOrderCreation = 1f;
     }
 
     public void InitializeCustomer()
     {
-        customerName = "Müþteri " + UnityEngine.Random.Range(1000, 9999);
+        customerName = "Müþteri " + UnityEngine.Random.Range(1000, 9999).ToString();
+        Debug.Log($"OrderData: Müþteri atandý - {customerName} için Sipariþ ID: {orderID}");
     }
 }

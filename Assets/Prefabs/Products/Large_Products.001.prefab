@@ -134,7 +134,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 2
+  m_CollisionDetection: 0
 --- !u!114 &7958005105927963102
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -151,9 +151,10 @@ MonoBehaviour:
     productName: MJI Drone
     price: 75
     productPrefab: {fileID: 6910125235702809442}
-    prefab: {fileID: 6910125235702809442}
     quantity: 0
     isLarge: 1
     priceText: {fileID: 0}
-  isPlaced: 0
+    baseMarketPrice: 0
+    currentAverageMarketPrice: 0
+    priceTrendStreak: 0
   isHeld: 1

@@ -2,118 +2,207 @@ using UnityEngine;
 
 public class CanvasControl : MonoBehaviour
 {
-    public GameObject canvas; // Canvas referansý
-    public KeyCode interactKey = KeyCode.E; // Etkileþim tuþu
-    public float interactionDistance = 2f; // Mesafe kontrolü için kullanýlabilir (isteðe baðlý)
-    public Transform player; // Oyuncunun Transform'u
-    public MarketScreenManager marketScreenManager; // MarketScreenManager referansý
+    [SerializeField] private GameObject canvas;
+    [SerializeField] private KeyCode interactKey = KeyCode.E;
+    [SerializeField] private float interactionDistance = 2f;
+    [SerializeField] private Transform player;
+    [SerializeField] private MarketScreenManager marketScreenManager;
 
-    private bool isPlayerNearby = false; // Oyuncunun yakýnlýk durumunu kontrol etmek için
-    private bool isCanvasOpen = false; // Canvas’ýn açýk olup olmadýðýný takip etmek için
+    private bool isPlayerNearby = false;
+    private bool isCanvasOpen = false;
 
     void Start()
     {
-        // Canvas’ý baþlangýçta kapat
-        if (canvas != null)
+        try
         {
-            canvas.SetActive(false);
-            isCanvasOpen = false;
-        }
+            if (canvas == null)
+            {
+                Debug.LogError("CanvasControl: Canvas referansý atanmamýþ!");
+            }
+            else
+            {
+                canvas.SetActive(false);
+                isCanvasOpen = false;
+                Debug.Log("Canvas baþlangýçta kapalý.");
+            }
 
-        // Fareyi kilitle ve gizle
-        LockCursor();
+            if (player == null) Debug.LogError("CanvasControl: Player Transform atanmamýþ!");
+            if (marketScreenManager == null) Debug.LogError("CanvasControl: MarketScreenManager atanmamýþ!");
+
+            LockCursor();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Start sýrasýnda hata: {e.Message}");
+        }
     }
 
     void Update()
     {
-        // Eðer oyuncu yakýnsa ve etkileþim tuþuna basarsa
-        if (isPlayerNearby && Input.GetKeyDown(interactKey))
+        try
         {
-            ToggleCanvas();
-        }
+            if (isPlayerNearby && Input.GetKeyDown(interactKey))
+            {
+                Debug.Log($"E tuþuna basýldý, canvas açýlmaya çalýþýlýyor. isPlayerNearby: {isPlayerNearby}");
+                ToggleCanvas();
+            }
 
-        // ESC tuþu ile canvas’ý kapat ve fareyi kilitle
-        if (Input.GetKeyDown(KeyCode.Escape) && isCanvasOpen)
+            if (Input.GetKeyDown(KeyCode.Escape) && isCanvasOpen)
+            {
+                Debug.Log("ESC tuþuna basýldý, canvas kapatýlýyor.");
+                CloseCanvas();
+            }
+        }
+        catch (System.Exception e)
         {
-            CloseCanvas();
+            Debug.LogError($"Update sýrasýnda hata: {e.Message}");
         }
     }
 
     public void ToggleCanvas()
     {
-        isCanvasOpen = !isCanvasOpen;
-        canvas.SetActive(isCanvasOpen);
+        try
+        {
+            Debug.Log($"ToggleCanvas çaðrýldý. Mevcut durum: isCanvasOpen={isCanvasOpen}, canvas={(canvas == null ? "null" : canvas.name)}, marketScreenManager={(marketScreenManager == null ? "null" : marketScreenManager.name)}");
+            isCanvasOpen = !isCanvasOpen;
 
-        if (isCanvasOpen)
-        {
-            // Canvas açýldýðýnda MarketScreenManager’ýn ShowMainMenu metodunu çaðýr
-            if (marketScreenManager != null)
+            if (canvas == null)
             {
-                marketScreenManager.ShowMainMenu();
+                Debug.LogError("Canvas null, açýlamadý!");
+                isCanvasOpen = false;
+                return;
             }
-            UnlockCursor();
+
+            canvas.SetActive(isCanvasOpen);
+            Debug.Log($"Canvas durumu oldu: {isCanvasOpen}");
+
+            if (isCanvasOpen)
+            {
+                if (marketScreenManager != null)
+                {
+                    marketScreenManager.ShowMainMenu();
+                    Debug.Log("MarketScreenManager.ShowMainMenu çaðrýldý.");
+                }
+                else
+                {
+                    Debug.LogWarning("MarketScreenManager null, ShowMainMenu çaðrýlmadý!");
+                }
+                UnlockCursor();
+            }
+            else
+            {
+                if (marketScreenManager != null)
+                {
+                    marketScreenManager.CloseCanvas();
+                    Debug.Log("MarketScreenManager.CloseCanvas çaðrýldý.");
+                }
+                else
+                {
+                    Debug.LogWarning("MarketScreenManager null, CloseCanvas çaðrýlmadý!");
+                }
+                LockCursor();
+            }
         }
-        else
+        catch (System.Exception e)
         {
-            // Canvas kapandýðýnda MarketScreenManager’ýn CloseCanvas metodunu çaðýr
-            if (marketScreenManager != null)
-            {
-                marketScreenManager.CloseCanvas();
-            }
-            LockCursor();
+            Debug.LogError($"ToggleCanvas sýrasýnda hata: {e.Message}");
+            isCanvasOpen = false;
         }
     }
 
     public void CloseCanvas()
     {
-        isCanvasOpen = false;
-        canvas.SetActive(false);
-
-        if (marketScreenManager != null)
+        try
         {
-            marketScreenManager.CloseCanvas();
+            isCanvasOpen = false;
+            if (canvas != null)
+            {
+                canvas.SetActive(false);
+                Debug.Log("Canvas kapatýldý.");
+            }
+            else
+            {
+                Debug.LogError("Canvas null, kapatýlmadý!");
+            }
+
+            if (marketScreenManager != null)
+            {
+                marketScreenManager.CloseCanvas();
+                Debug.Log("MarketScreenManager.CloseCanvas çaðrýldý.");
+            }
+            else
+            {
+                Debug.LogWarning("MarketScreenManager null, CloseCanvas çaðrýlmadý!");
+            }
+            LockCursor();
         }
-        LockCursor();
+        catch (System.Exception e)
+        {
+            Debug.LogError($"CloseCanvas sýrasýnda hata: {e.Message}");
+        }
     }
 
-    // Oyuncu Collider’ýn içine girerse
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player")) // Oyuncunun etiketinin "Player" olduðundan emin olun
+        try
         {
-            isPlayerNearby = true;
-            
+            if (other.CompareTag("Player"))
+            {
+                isPlayerNearby = true;
+                Debug.Log($"Player entered trigger. isPlayerNearby: {isPlayerNearby}, Collider: {other.gameObject.name}");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"OnTriggerEnter sýrasýnda hata: {e.Message}");
         }
     }
 
-    // Oyuncu Collider’dan çýkarsa
     void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Player")) // Oyuncu ayrýldýðýnda
+        try
         {
-            isPlayerNearby = false;
-            // Oyuncu uzaklaþtýðýnda canvas açýksa kapat
-            if (isCanvasOpen)
+            if (other.CompareTag("Player"))
             {
-                CloseCanvas();
+                isPlayerNearby = false;
+                Debug.Log($"Player exited trigger. isPlayerNearby: {isPlayerNearby}, Collider: {other.gameObject.name}");
+                if (isCanvasOpen)
+                {
+                    CloseCanvas();
+                }
             }
-            
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"OnTriggerExit sýrasýnda hata: {e.Message}");
         }
     }
 
-    // Ýmleci kilitle ve gizle
     public void LockCursor()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        
+        try
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            Debug.Log("Fare kilitlendi.");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"LockCursor sýrasýnda hata: {e.Message}");
+        }
     }
 
-    // Ýmleci serbest býrak ve görünür yap
     public void UnlockCursor()
     {
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        
+        try
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            Debug.Log("Fare serbest býrakýldý.");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"UnlockCursor sýrasýnda hata: {e.Message}");
+        }
     }
 }

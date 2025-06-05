@@ -9,6 +9,7 @@ TagManager:
   - BuyButton
   - Shelf
   - CargoBox
+  - SlipTag
   layers:
   - Default
   - TransparentFX

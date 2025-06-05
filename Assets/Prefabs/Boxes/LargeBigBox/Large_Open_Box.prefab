@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 9022921636335063356}
   - component: {fileID: 3303067661601505054}
   - component: {fileID: 7924432174709323873}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Large_Open_Box
   m_TagString: CargoBox
   m_Icon: {fileID: 0}
@@ -183,12 +183,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isLargeBox: 1
-  detectionRadius: 3
   productSlots:
   - {fileID: 8222086198509857482}
   - {fileID: 9036791670830399289}
   - {fileID: 4140661684659788080}
   - {fileID: 2830419339075417744}
+  assignedOrder:
+    orderID: 070fc81c
+    itemsInOrder: []
+    customerName: 
+    orderTimestamp: 0
+    dueTimestamp: 0
+    orderType: 0
+    status: 0
+    totalOrderValue: 0
+    timeMultiplierAtOrderCreation: 0
 --- !u!1 &5924959804239935636
 GameObject:
   m_ObjectHideFlags: 0
