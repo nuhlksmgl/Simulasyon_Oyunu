@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
-// using TMPro; // Bu script'te doğrudan TMPro kullanılmıyorsa bu satır gereksiz olabilir.
-// using System.Text; // Bu script'te doğrudan StringBuilder vb. kullanılmıyorsa bu satır gereksiz olabilir.
+using System.Collections; // Coroutine için (şimdilik kullanılmıyor ama gelecekte gerekebilir)
 
 public class ObjectPickup : MonoBehaviour
 {
@@ -8,17 +7,19 @@ public class ObjectPickup : MonoBehaviour
     [SerializeField] private Transform slipHoldPosition;
     [SerializeField] private float pickupDistance = 5.0f;
     [SerializeField] private float lerpSpeed = 20f;
-    [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f); // Product highlight için
+    [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f);
     [SerializeField] private GameObject crosshair;
     [SerializeField] private Transform[] shelfSlots;
     [SerializeField] private float shelfPlaceDistance = 2.0f;
     [SerializeField] private float cargoPlaceDistance = 7.0f;
+    [SerializeField] private LayerMask groundLayerMask;
+    [SerializeField] private float dropForwardOffset = 2.0f; // Bu, basit testte kullanılmayacak ama kalsın
 
     private GameObject heldObject;
     private GameObject highlightedObject;
     private Camera mainCamera;
-    private Color originalColor; // Product'ların orijinal rengini saklamak için
-    private bool isHighlighted;  // Bir Product'ın vurgulanıp vurgulanmadığını belirtir
+    private Color originalColor;
+    private bool isHighlighted;
     private GameObject shelf;
     private LayerMask pickupLayer;
     private LayerMask slipLayer;
@@ -26,7 +27,7 @@ public class ObjectPickup : MonoBehaviour
     private Transform currentHoldPosition;
 
     private Vector3 originalWorldScale;
-    private Quaternion originalLocalRotation; // Objelerin bırakıldığında döneceği orijinal lokal rotasyon
+    private Quaternion originalLocalRotation;
 
     private void Awake()
     {
@@ -36,7 +37,6 @@ public class ObjectPickup : MonoBehaviour
         if (holdPosition == null) Debug.LogError("HoldPosition atanmamış!", this);
         else
         {
-            // Debug.Log($"HoldPosition başlangıç pozisyonu: {holdPosition.position}, ölçeği: {holdPosition.localScale}");
             if (holdPosition.localScale != Vector3.one)
             {
                 Debug.LogWarning("HoldPosition’ın ölçeği (1,1,1) değil! Ölçek (1,1,1) olarak sıfırlanıyor.");
@@ -44,14 +44,11 @@ public class ObjectPickup : MonoBehaviour
             }
         }
 
-        // --- SLIPHOLDPOSITION İÇİN ÖLÇEK AYARI ---
         if (slipHoldPosition == null) Debug.LogError("SlipHoldPosition atanmamış! Ölçek ayarlanamıyor.", this);
         else
         {
-            // Debug.Log($"SlipHoldPosition başlangıç pozisyonu: {slipHoldPosition.position}, mevcut ölçeği: {slipHoldPosition.localScale}. Ölçek (2,2,2) olarak ayarlanıyor.");
-            slipHoldPosition.localScale = new Vector3(2f, 2f, 2f); // İstenen ölçek
+            slipHoldPosition.localScale = new Vector3(2f, 2f, 2f);
         }
-        // --- ÖLÇEK AYARI SONU ---
 
         if (crosshair == null) Debug.LogError("Crosshair atanmamış!", this);
         if (shelfSlots == null || shelfSlots.Length == 0) Debug.LogError("ShelfSlots atanmamış!", this);
@@ -61,29 +58,17 @@ public class ObjectPickup : MonoBehaviour
 
         pickupLayer = LayerMask.GetMask("Pickup");
         slipLayer = LayerMask.GetMask("Slip");
+
+        if (groundLayerMask == 0)
+        {
+            Debug.LogWarning("Ground Layer Mask atanmamış! Physics.DefaultRaycastLayers kullanılacak, bu istenmeyen sonuçlara yol açabilir.");
+        }
     }
 
     private void Update()
     {
         try
         {
-            // holdPosition'ın ölçeğinin runtime'da değişip değişmediğini kontrol et (isteğe bağlı)
-            if (holdPosition != null && holdPosition.localScale != Vector3.one)
-            {
-                Debug.LogWarning($"HoldPosition’ın ölçeği Update'te değişti! Şu anki ölçek: {holdPosition.localScale}. Ölçek (1,1,1)'e sıfırlanıyor.");
-                holdPosition.localScale = Vector3.one;
-            }
-
-            // slipHoldPosition'ın ölçeği Awake'te (2,2,2) olarak ayarlandı.
-            // Update'te sürekli kontrol edip sıfırlayan kod kaldırıldı.
-            // Eğer runtime'da başka bir şeyin bu ölçeği değiştirmemesini garantilemek isterseniz,
-            // buraya bir kontrol ve düzeltme eklenebilir:
-            // if (slipHoldPosition != null && slipHoldPosition.localScale != new Vector3(2f, 2f, 2f))
-            // {
-            //     Debug.LogWarning($"SlipHoldPosition’ın ölçeği Update'te (2,2,2)'den farklı! Şu anki ölçek: {slipHoldPosition.localScale}. Ölçek (2,2,2)'ye sıfırlanıyor.");
-            //     slipHoldPosition.localScale = new Vector3(2f, 2f, 2f);
-            // }
-
             HandleInput();
             UpdateHeldObjectPosition();
             HighlightObjectUnderMouse();
@@ -156,8 +141,7 @@ public class ObjectPickup : MonoBehaviour
             if (currentHoldPosition == null)
             {
                 Debug.LogError($"Hata: currentHoldPosition null! Obje: {heldObject.name}, Tag: {heldObject.tag}");
-                if (this.heldObject != null) Debug.LogWarning($"Acil durum: {this.heldObject.name} objesi bırakılıyor çünkü currentHoldPosition null.");
-                DropObject();
+                if (this.heldObject != null) DropObject();
                 return;
             }
 
@@ -173,9 +157,6 @@ public class ObjectPickup : MonoBehaviour
                 heldObject.transform.localRotation = Quaternion.identity;
             }
 
-            // ÖNEMLİ: Bu satır, parent'in (currentHoldPosition) ölçeği 1 değilse,
-            // tutulan objenin efektif dünya boyutunu değiştirir.
-            // slipHoldPosition.localScale (2,2,2) ise, slip tutulurken 2 kat büyük görünür.
             heldObject.transform.localScale = originalWorldScale;
 
             if (heldObject.TryGetComponent(out Rigidbody rb))
@@ -186,9 +167,9 @@ public class ObjectPickup : MonoBehaviour
             }
 
             if (heldObject.TryGetComponent(out Product product)) product.OnPickedUp();
-            else if (heldObject.TryGetComponent(out Slip slip) && heldObject.CompareTag("SlipTag"))
+            else if (heldObject.TryGetComponent<Slip>(out Slip slip) && heldObject.CompareTag("SlipTag"))
             {
-                // Slip.OnPickedUp() zaten TryPickupFromShelf içinde çağrılıyor.
+                // Slip.OnPickedUp(), TryPickupFromShelf içinde çağrılıyor.
             }
 
             heldObject.SetActive(true);
@@ -209,27 +190,22 @@ public class ObjectPickup : MonoBehaviour
         if (heldObject == null || currentHoldPosition == null) return;
         try
         {
-            if (heldObject.CompareTag("SlipTag") && currentHoldPosition != slipHoldPosition)
+            Transform targetParent = null;
+            if (heldObject.CompareTag("SlipTag"))
             {
-                currentHoldPosition = slipHoldPosition;
+                if (currentHoldPosition != slipHoldPosition) targetParent = slipHoldPosition;
+            }
+            else if (heldObject.CompareTag("Pickup"))
+            {
+                if (currentHoldPosition != holdPosition) targetParent = holdPosition;
+            }
+
+            if (targetParent != null)
+            {
+                currentHoldPosition = targetParent;
                 if (heldObject.transform.parent != currentHoldPosition)
                 {
                     heldObject.transform.SetParent(currentHoldPosition);
-                    // Parent değiştiğinde localPosition'ı tekrar sıfırlamak iyi bir fikir olabilir
-                    // Eğer pozisyonda ani sıçramalar oluyorsa:
-                    // heldObject.transform.localPosition = Vector3.zero;
-                }
-            }
-            else if (!heldObject.CompareTag("SlipTag") && currentHoldPosition != holdPosition)
-            {
-                if (heldObject.CompareTag("Pickup"))
-                {
-                    currentHoldPosition = holdPosition;
-                    if (heldObject.transform.parent != currentHoldPosition)
-                    {
-                        heldObject.transform.SetParent(currentHoldPosition);
-                        // heldObject.transform.localPosition = Vector3.zero;
-                    }
                 }
             }
 
@@ -436,48 +412,127 @@ public class ObjectPickup : MonoBehaviour
     private void DropObject()
     {
         if (heldObject == null) return;
+
+        GameObject objectToDrop = heldObject;
+
         try
         {
-            Vector3 dropPositionBase = mainCamera.transform.position + mainCamera.transform.forward * 1.5f;
-            float objectHeightOffset = heldObject.transform.lossyScale.y / 2f;
-
-            if (Physics.Raycast(dropPositionBase + Vector3.up * 5f, Vector3.down, out RaycastHit groundHit, 10f))
+            // --- PRODUCT'LAR İÇİN GEÇİCİ BASİT BIRAKMA TESTİ ---
+            if (objectToDrop.CompareTag("Pickup")) // Product ise
             {
-                dropPositionBase.y = groundHit.point.y + objectHeightOffset;
+                Debug.LogWarning($"[DropObject_ProductTest] {objectToDrop.name} BASİT BIRAKMA mantığı ile bırakılıyor.");
+                objectToDrop.transform.SetParent(null);
+
+                // Oyuncunun (bu script'in bağlı olduğu transform) biraz önüne ve biraz yukarısına bırak
+                Vector3 testDropPos = transform.position + transform.forward * 2.0f + transform.up * 0.5f;
+                objectToDrop.transform.position = testDropPos;
+                objectToDrop.transform.rotation = Quaternion.identity; // Dünya rotasyonunu sıfırla
+                objectToDrop.transform.localScale = originalWorldScale; // Orijinal dünya ölçeğini geri yükle
+
+                if (objectToDrop.TryGetComponent(out Rigidbody rbP)) // 'rbP' Product için
+                {
+                    rbP.isKinematic = false;
+                    rbP.velocity = Vector3.zero;
+                    rbP.angularVelocity = Vector3.zero;
+                    // Product prefab'ının Collision Detection ayarını kullanması için burada zorlamıyoruz,
+                    // ama test için ContinuousSpeculative yapabilirsiniz:
+                    // rbP.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                    Debug.Log($"[DropObject_ProductTest] {objectToDrop.name} Rigidbody: isKinematic={rbP.isKinematic}, collisionMode={rbP.collisionDetectionMode}, pos={objectToDrop.transform.position}");
+                }
+
+                if (objectToDrop.TryGetComponent<Product>(out Product productComponent))
+                {
+                    if (productComponent.isHeld) productComponent.isHeld = false;
+                }
             }
+            // --- SLIP'LER VE DİĞERLERİ İÇİN NORMAL BIRAKMA MANTIĞI ---
             else
             {
-                dropPositionBase.y = Mathf.Max(0.05f + objectHeightOffset, transform.position.y - 1f + objectHeightOffset);
+                Vector3 dropDirectionXZ = mainCamera.transform.forward;
+                dropDirectionXZ.y = 0;
+                if (dropDirectionXZ.sqrMagnitude < 0.001f)
+                {
+                    dropDirectionXZ = transform.forward;
+                    dropDirectionXZ.y = 0;
+                    if (dropDirectionXZ.sqrMagnitude < 0.001f)
+                    {
+                        dropDirectionXZ = transform.forward;
+                        if (dropDirectionXZ.sqrMagnitude < 0.001f) dropDirectionXZ = Vector3.forward;
+                    }
+                }
+                dropDirectionXZ.Normalize();
+
+                Vector3 horizontalDropBase = transform.position + dropDirectionXZ * dropForwardOffset;
+                Vector3 rayStartPoint = new Vector3(horizontalDropBase.x, transform.position.y + 1.0f, horizontalDropBase.z);
+
+                float objectHeightOffset = objectToDrop.transform.lossyScale.y / 2f;
+                objectHeightOffset = Mathf.Max(0.01f, objectHeightOffset);
+
+                Vector3 finalDropPosition;
+                bool groundFound = false;
+                RaycastHit groundHit;
+                float raycastDistance = 10f;
+
+                if (Physics.Raycast(rayStartPoint, Vector3.down, out groundHit, raycastDistance, groundLayerMask))
+                {
+                    finalDropPosition = groundHit.point + (Vector3.up * (objectHeightOffset + 0.02f));
+                    groundFound = true;
+                }
+                else
+                {
+                    finalDropPosition = new Vector3(horizontalDropBase.x,
+                                                    transform.position.y + objectHeightOffset,
+                                                    horizontalDropBase.z);
+                    Debug.LogWarning($"[DropObject] {objectToDrop.name} için zemin bulunamadı. Fallback pozisyonu: {finalDropPosition}");
+                }
+
+                // Debug.Log($"[DropObject] {objectToDrop.name} - Nihai Bırakma Pozisyonu: {finalDropPosition}, Zemin Bulundu: {groundFound}, Çarpılan: {(groundFound ? groundHit.collider.name : "Yok")}");
+
+                // Penetration Check (Slip veya diğerleri için de yapılabilir, şimdilik sadece Product için yukarıdaydı)
+                // ...
+
+                objectToDrop.transform.SetParent(null);
+                objectToDrop.transform.position = finalDropPosition;
+                objectToDrop.transform.localRotation = originalLocalRotation;
+                objectToDrop.transform.localScale = originalWorldScale;
+
+                if (objectToDrop.TryGetComponent(out Rigidbody rb))
+                {
+                    rb.isKinematic = false;
+                    rb.velocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+
+                    if (objectToDrop.CompareTag("SlipTag"))
+                    {
+                        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                    }
+                }
+
+                if (objectToDrop.TryGetComponent<Product>(out Product productComponent)) // Bu blok artık yukarıdaki özel Product bloğunda
+                {
+                    // if (productComponent.isHeld) productComponent.isHeld = false; 
+                }
+                if (objectToDrop.TryGetComponent<Slip>(out Slip slipComponent))
+                {
+                    slipComponent.OnDropped();
+                }
             }
 
-            heldObject.transform.SetParent(null);
-            heldObject.transform.position = dropPositionBase;
-            heldObject.transform.localRotation = originalLocalRotation;
-            heldObject.transform.localScale = originalWorldScale;
-
-            if (heldObject.TryGetComponent(out Rigidbody rb))
+            // Her iki dal için ortak:
+            objectToDrop.SetActive(true);
+            Renderer renderer = objectToDrop.GetComponent<Renderer>();
+            if (renderer != null)
             {
-                rb.isKinematic = false;
+                renderer.enabled = true;
             }
 
-            if (heldObject.TryGetComponent<Product>(out Product product))
+            if (this.heldObject == objectToDrop)
             {
-                if (product.isHeld) product.isHeld = false;
-            }
-            if (heldObject.TryGetComponent<Slip>(out Slip slip))
-            {
-                slip.OnDropped();
+                this.heldObject = null;
+                this.currentHoldPosition = null;
             }
 
-            heldObject.SetActive(true);
-            Renderer renderer = heldObject.GetComponent<Renderer>();
-            if (renderer != null) renderer.enabled = true;
-
-            GameObject tempHeldObject = heldObject;
-            heldObject = null;
-            currentHoldPosition = null;
-
-            if (highlightedObject == tempHeldObject)
+            if (highlightedObject == objectToDrop)
             {
                 highlightedObject = null;
                 isHighlighted = false;
@@ -485,14 +540,36 @@ public class ObjectPickup : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"DropObject sırasında hata ({heldObject?.name}): {e.Message}\n{e.StackTrace}");
-            if (this.heldObject != null)
+            Debug.LogError($"[DropObject] sırasında HATA ({objectToDrop?.name}): {e.Message}\n{e.StackTrace}");
+            if (objectToDrop != null)
             {
-                Debug.LogWarning($"DropObject hatası sonrası {this.heldObject.name} zorla null yapılıyor.");
-                this.heldObject.transform.SetParent(null);
-                if (this.heldObject.TryGetComponent(out Rigidbody rb)) rb.isKinematic = false;
-                this.heldObject = null;
-                this.currentHoldPosition = null;
+                Debug.LogWarning($"[DropObject] Hata sonrası {objectToDrop.name} için acil durum bırakma.");
+                if (!objectToDrop.activeSelf) objectToDrop.SetActive(true);
+                Renderer rend = objectToDrop.GetComponent<Renderer>();
+                if (rend != null && !rend.enabled) rend.enabled = true;
+                else if (rend == null) Debug.LogWarning($"[DropObject] Catch: {objectToDrop.name} için Renderer bulunamadı.");
+                if (objectToDrop.transform.parent != null) objectToDrop.transform.SetParent(null);
+                if (objectToDrop.TryGetComponent(out Rigidbody rbCatch))
+                {
+                    rbCatch.isKinematic = false;
+                    if (objectToDrop.CompareTag("SlipTag")) rbCatch.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                }
+                if (this.heldObject == objectToDrop) { this.heldObject = null; this.currentHoldPosition = null; }
+            }
+            else if (this.heldObject != null)
+            {
+                Debug.LogWarning($"[DropObject] Hata sonrası (objectToDrop null): {this.heldObject.name} zorla bırakılıyor.");
+                GameObject emergencyDropObj = this.heldObject;
+                if (!emergencyDropObj.activeSelf) emergencyDropObj.SetActive(true);
+                Renderer emergencyRend = emergencyDropObj.GetComponent<Renderer>();
+                if (emergencyRend != null && !emergencyRend.enabled) emergencyRend.enabled = true;
+                emergencyDropObj.transform.SetParent(null);
+                if (emergencyDropObj.TryGetComponent(out Rigidbody rbE))
+                {
+                    rbE.isKinematic = false;
+                    if (emergencyDropObj.CompareTag("SlipTag")) rbE.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                }
+                this.heldObject = null; this.currentHoldPosition = null;
             }
         }
     }
@@ -670,6 +747,10 @@ public class ObjectPickup : MonoBehaviour
             if (heldObject.TryGetComponent(out Rigidbody rb) && rb.isKinematic)
             {
                 rb.isKinematic = false;
+                if (heldObject.CompareTag("SlipTag"))
+                {
+                    // rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                }
             }
         }
         heldObject = null;
