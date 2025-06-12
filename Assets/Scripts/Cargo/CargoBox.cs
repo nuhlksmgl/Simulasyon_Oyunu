@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 public class CargoBox : MonoBehaviour
 {
@@ -78,7 +79,6 @@ public class CargoBox : MonoBehaviour
 
         Transform slot = productSlots[slotIndex];
 
-        // Ürün yerleştirme işlemi Product scriptini yok etmez, sadece ebeveynini değiştirir.
         product.transform.SetParent(slot);
         product.transform.localPosition = Vector3.zero;
         product.transform.localRotation = Quaternion.identity;
@@ -103,26 +103,54 @@ public class CargoBox : MonoBehaviour
         if (!IsOpen) return null;
         if (isBeingCarried) return null;
 
-        foreach (Product productInBox in placedProducts)
-        {
-            // Basitleştirilmiş mantık: Şimdilik kutudaki herhangi bir ürünü al
-            // Daha gelişmiş bir sistem için ışınla spesifik ürünü hedefleyebilirsiniz.
-            placedProducts.Remove(productInBox);
+        // Işını kullanarak spesifik ürünü bul ve döndür
+        Product productToTake = GetProductAtRay(new Ray(rayOrigin, rayDirection), maxDistance);
 
-            int slotIndex = -1;
+        if (productToTake != null)
+        {
+            placedProducts.Remove(productToTake);
+
+            int slotIndexToFree = -1;
             for (int i = 0; i < productSlots.Length; i++)
             {
-                if (productSlots[i] == productInBox.transform.parent)
+                if (productSlots[i] == productToTake.transform.parent)
                 {
-                    slotIndex = i;
+                    slotIndexToFree = i;
                     break;
                 }
             }
-            if (slotIndex != -1) slotOccupied[slotIndex] = false;
+            if (slotIndexToFree != -1) slotOccupied[slotIndexToFree] = false;
 
-            return productInBox;
+            return productToTake;
         }
         return null;
+    }
+
+    // YENİ YARDIMCI FONKSİYON
+    public Product GetProductAtRay(Ray ray, float maxDistance)
+    {
+        if (!IsOpen) return null;
+
+        // Işının çarptığı tüm objeleri al
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance);
+
+        // Bu kutudaki ürünlerle eşleşen en yakın olanı bul
+        Product closestProduct = null;
+        float minDistance = float.MaxValue;
+
+        foreach (RaycastHit hit in hits)
+        {
+            Product productInBox = hit.collider.GetComponent<Product>();
+            if (productInBox != null && placedProducts.Contains(productInBox))
+            {
+                if (hit.distance < minDistance)
+                {
+                    minDistance = hit.distance;
+                    closestProduct = productInBox;
+                }
+            }
+        }
+        return closestProduct;
     }
 
     public void AssignOrder(OrderData order) => assignedOrder = order;

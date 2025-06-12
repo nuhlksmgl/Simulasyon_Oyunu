@@ -31,8 +31,8 @@ public class ObjectPickup : MonoBehaviour
     private GameObject shelf;
     private LayerMask pickupLayer;
     private LayerMask slipLayer;
-    private LayerMask cargoBoxLayer; // Kargo kutuları için LayerMask
-    private LayerMask interactableLayers; // Tüm etkileşimli katmanları birleştirmek için
+    private LayerMask cargoBoxLayer;
+    private LayerMask interactableLayers;
     private Coroutine pickupCoroutine;
 
     private void Awake()
@@ -46,12 +46,9 @@ public class ObjectPickup : MonoBehaviour
         shelf = GameObject.FindWithTag("Shelf");
         if (shelf == null) Debug.LogError("Shelf tag’lı obje bulunamadı!", this);
 
-        // LayerMask'leri başlangıçta hazırla
         pickupLayer = LayerMask.GetMask("Pickup");
         slipLayer = LayerMask.GetMask("Slip");
         cargoBoxLayer = LayerMask.GetMask("CargoBox");
-
-        // Tüm etkileşimli katmanları birleştir
         interactableLayers = pickupLayer | slipLayer | cargoBoxLayer;
     }
 
@@ -64,7 +61,6 @@ public class ObjectPickup : MonoBehaviour
 
     private void HandleInput()
     {
-        // Sol Tık Mantığı
         if (Input.GetMouseButtonDown(0))
         {
             if (pickupCoroutine != null) return;
@@ -72,8 +68,6 @@ public class ObjectPickup : MonoBehaviour
             if (heldObject == null)
             {
                 Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-
-                // GÜNCELLEME: Raycast artık sadece belirli katmanları hedef alıyor.
                 if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, interactableLayers))
                 {
                     CargoBoxProxy proxy = hit.collider.GetComponentInParent<CargoBoxProxy>();
@@ -89,28 +83,16 @@ public class ObjectPickup : MonoBehaviour
             }
             else
             {
-                if (IsNearCargoBox(out CargoBox targetCargoBox))
-                {
-                    TryPlaceObjectInCargoBox(targetCargoBox);
-                }
-                else if (IsNearShelf())
-                {
-                    TryPlaceObjectOnShelf();
-                }
-                else
-                {
-                    DropObject();
-                }
+                if (IsNearCargoBox(out CargoBox targetCargoBox)) TryPlaceObjectInCargoBox(targetCargoBox);
+                else if (IsNearShelf()) TryPlaceObjectOnShelf();
+                else DropObject();
             }
         }
 
-        // Sağ Tık Mantığı
         if (Input.GetMouseButtonDown(1))
         {
             if (heldObject != null || pickupCoroutine != null) return;
-
             Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-            // Sağ tık sadece kargo kutularıyla etkileşime girmeli
             if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, cargoBoxLayer))
             {
                 CargoBoxProxy proxy = hit.collider.GetComponentInParent<CargoBoxProxy>();
@@ -242,7 +224,8 @@ public class ObjectPickup : MonoBehaviour
             slip.OnDropped();
         }
 
-        if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb))
+        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+        if (rb != null)
         {
             rb.isKinematic = false;
             rb.velocity = Vector3.zero;
@@ -252,6 +235,9 @@ public class ObjectPickup : MonoBehaviour
         Vector3 dropPosition = FindSafeDropPosition(lastHeldPosition);
         heldObject.transform.position = dropPosition;
         heldObject.transform.rotation = Quaternion.identity;
+
+        Debug.Log($"[DropObject] {heldObject.name} objesi {dropPosition} pozisyonuna bırakıldı.");
+
         heldObject = null;
     }
 
@@ -263,13 +249,18 @@ public class ObjectPickup : MonoBehaviour
 
         Vector3 targetPoint = dropOrigin + checkDirection * 0.1f;
 
+        // Hata ayıklama için ışını Scene'de görünür yapalım
+        Debug.DrawRay(targetPoint, Vector3.down * 5f, Color.red, 2f);
+
         if (Physics.Raycast(targetPoint, Vector3.down, out RaycastHit hit, 5f, groundLayerMask))
         {
+            Debug.Log($"[FindSafeDropPosition] Güvenli zemin bulundu! Çarpılan obje: {hit.collider.name}");
             float objectHeight = heldObject.transform.lossyScale.y;
             return hit.point + new Vector3(0, objectHeight / 2 + 0.05f, 0);
         }
         else
         {
+            Debug.LogError("[FindSafeDropPosition] Güvenli zemin bulunamadı! Fallback pozisyonu kullanılıyor. Lütfen Ground Layer Mask ayarınızı kontrol edin.");
             return transform.position + transform.forward * dropForwardOffset;
         }
     }
@@ -297,7 +288,7 @@ public class ObjectPickup : MonoBehaviour
                     originalWorldScale.z / (parentWorldScale.z == 0 ? 1 : parentWorldScale.z)
                 );
 
-                if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
+                if (heldObject.TryGetComponent(out Rigidbody rb)) rb.isKinematic = true;
 
                 productToPlace.isHeld = false;
                 heldObject = null;
@@ -327,8 +318,6 @@ public class ObjectPickup : MonoBehaviour
         if (mainCamera == null) return;
         Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
         GameObject objectFoundByRay = null;
-
-        // Highlight için de sadece belirli katmanları hedefle
         if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, interactableLayers))
         {
             if (hit.collider.gameObject != heldObject) objectFoundByRay = hit.collider.gameObject;
