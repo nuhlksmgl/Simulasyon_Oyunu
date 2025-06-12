@@ -20,11 +20,14 @@ public class CargoBox : MonoBehaviour
     private bool[] slotOccupied;
     private Rigidbody rb;
     private bool isBeingCarried = false;
+    private Collider boxCollider;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        boxCollider = GetComponent<Collider>();
         if (rb == null) Debug.LogError($"CargoBox ({gameObject.name}): Rigidbody component'i eksik!");
+        if (boxCollider == null) Debug.LogError($"CargoBox ({gameObject.name}): Box Collider atanmamış!");
         if (boxAnimator == null) Debug.LogError($"CargoBox ({gameObject.name}): Box Animator atanmamış!");
 
         if (productSlots != null && productSlots.Length > 0)
@@ -61,23 +64,22 @@ public class CargoBox : MonoBehaviour
             return false;
         }
 
-        if (product == null || IsFull() || (!isLargeBox && product.productDefinition.isLarge))
-        {
-            return false;
-        }
+        if (product == null || IsFull() || (!isLargeBox && product.productDefinition.isLarge)) return false;
 
         int slotIndex = -1;
         for (int i = 0; i < slotOccupied.Length; i++)
         {
-            if (!slotOccupied[i])
-            {
-                slotIndex = i;
-                break;
-            }
+            if (!slotOccupied[i]) { slotIndex = i; break; }
         }
         if (slotIndex == -1) return false;
 
         Transform slot = productSlots[slotIndex];
+
+        Collider productCollider = product.GetComponent<Collider>();
+        if (productCollider != null && boxCollider != null)
+        {
+            Physics.IgnoreCollision(boxCollider, productCollider, true);
+        }
 
         product.transform.SetParent(slot);
         product.transform.localPosition = Vector3.zero;
@@ -103,7 +105,6 @@ public class CargoBox : MonoBehaviour
         if (!IsOpen) return null;
         if (isBeingCarried) return null;
 
-        // Işını kullanarak spesifik ürünü bul ve döndür
         Product productToTake = GetProductAtRay(new Ray(rayOrigin, rayDirection), maxDistance);
 
         if (productToTake != null)
@@ -121,20 +122,30 @@ public class CargoBox : MonoBehaviour
             }
             if (slotIndexToFree != -1) slotOccupied[slotIndexToFree] = false;
 
+            Collider productCollider = productToTake.GetComponent<Collider>();
+            if (productCollider != null && boxCollider != null)
+            {
+                Physics.IgnoreCollision(boxCollider, productCollider, false);
+            }
+
+            productToTake.transform.SetParent(null);
+            productToTake.transform.localScale = productToTake.GetOriginalWorldScale();
+
+            if (productToTake.TryGetComponent<Rigidbody>(out Rigidbody productRb))
+            {
+                productRb.isKinematic = false;
+            }
+
             return productToTake;
         }
         return null;
     }
 
-    // YENİ YARDIMCI FONKSİYON
     public Product GetProductAtRay(Ray ray, float maxDistance)
     {
         if (!IsOpen) return null;
 
-        // Işının çarptığı tüm objeleri al
         RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance);
-
-        // Bu kutudaki ürünlerle eşleşen en yakın olanı bul
         Product closestProduct = null;
         float minDistance = float.MaxValue;
 

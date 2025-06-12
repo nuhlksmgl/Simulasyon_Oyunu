@@ -20,7 +20,6 @@ public class ObjectPickup : MonoBehaviour
     [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f);
     [SerializeField] private GameObject crosshair;
     [SerializeField] private Transform[] shelfSlots;
-    [SerializeField] private LayerMask groundLayerMask;
     [SerializeField] private float dropForwardOffset = 1.5f;
 
     private GameObject heldObject;
@@ -64,7 +63,6 @@ public class ObjectPickup : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             if (pickupCoroutine != null) return;
-
             if (heldObject == null)
             {
                 Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
@@ -84,7 +82,7 @@ public class ObjectPickup : MonoBehaviour
             else
             {
                 if (IsNearCargoBox(out CargoBox targetCargoBox)) TryPlaceObjectInCargoBox(targetCargoBox);
-                else if (IsNearShelf()) TryPlaceObjectOnShelf();
+                else if (IsNearShelf() && heldObject.TryGetComponent<Product>(out _)) TryPlaceObjectOnShelf();
                 else DropObject();
             }
         }
@@ -101,6 +99,109 @@ public class ObjectPickup : MonoBehaviour
                     proxy.RealCargoBox.ToggleLids();
                 }
             }
+        }
+    }
+
+    private void DropObject()
+    {
+        if (heldObject == null) return;
+        if (pickupCoroutine != null)
+        {
+            StopCoroutine(pickupCoroutine);
+            pickupCoroutine = null;
+        }
+
+        Vector3 dropPosition = FindSafeDropPosition();
+
+        heldObject.transform.SetParent(null);
+
+        if (heldObject.TryGetComponent<Product>(out var product))
+        {
+            heldObject.transform.localScale = product.GetOriginalWorldScale();
+            product.isHeld = false;
+        }
+        if (heldObject.TryGetComponent<Slip>(out var slip))
+        {
+            heldObject.transform.localScale = slip.GetOriginalScale();
+            slip.OnDropped();
+        }
+
+        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        heldObject.transform.position = dropPosition;
+        heldObject.transform.rotation = Quaternion.identity;
+        heldObject = null;
+    }
+
+    private Vector3 FindSafeDropPosition()
+    {
+        if (heldObject == null) return transform.position;
+
+        Collider heldObjectCollider = heldObject.GetComponent<Collider>();
+        if (heldObjectCollider == null)
+        {
+            Debug.LogError($"{heldObject.name} üzerinde Collider yok! Güvenli bırakma başarısız olabilir.");
+            return mainCamera.transform.position + mainCamera.transform.forward * dropForwardOffset;
+        }
+
+        Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+        RaycastHit hit;
+
+        // Işın göndermeden önce objenin collider'ını geçici olarak devre dışı bırak
+        heldObjectCollider.enabled = false;
+
+        bool surfaceFound = Physics.Raycast(ray, out hit, pickupDistance * 2f);
+
+        // Collider'ı hemen geri aç
+        heldObjectCollider.enabled = true;
+
+        if (surfaceFound)
+        {
+            // hit.normal, yüzeyin baktığı yönü verir (zemin için yukarıyı gösterir).
+            // bounds.extents, collider'ın merkezinden dış kenarına olan mesafedir.
+            // Bu hesaplama, pivot nerede olursa olsun, objenin altını yüzeye tam oturtur.
+            return hit.point + hit.normal * heldObjectCollider.bounds.extents.y;
+        }
+        else
+        {
+            // Eğer hiçbir yüzey bulunamazsa, oyuncunun önüne bırak (fallback)
+            return mainCamera.transform.position + mainCamera.transform.forward * dropForwardOffset;
+        }
+    }
+
+    private void HighlightObjectUnderMouse()
+    {
+        if (mainCamera == null) return;
+        Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+        GameObject objectToHighlight = null;
+        if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, interactableLayers))
+        {
+            if (hit.collider.gameObject == heldObject) return;
+            CargoBoxProxy proxy = hit.collider.GetComponentInParent<CargoBoxProxy>();
+            if (proxy != null && proxy.RealCargoBox != null)
+            {
+                Product productInBox = proxy.RealCargoBox.GetProductAtRay(ray, pickupDistance);
+                if (productInBox != null)
+                {
+                    objectToHighlight = productInBox.gameObject;
+                }
+            }
+            else if (hit.collider.CompareTag("Pickup") || hit.collider.CompareTag("SlipTag"))
+            {
+                objectToHighlight = hit.collider.gameObject;
+            }
+        }
+        if (highlightedObject != objectToHighlight)
+        {
+            if (highlightedObject != null) RemoveHighlight();
+            highlightedObject = objectToHighlight;
+            if (highlightedObject != null) ApplyHighlight(highlightedObject);
         }
     }
 
@@ -122,11 +223,6 @@ public class ObjectPickup : MonoBehaviour
         if (product != null)
         {
             heldObject = product.gameObject;
-            if (heldObject.transform.parent != null)
-            {
-                heldObject.transform.SetParent(null);
-                heldObject.transform.localScale = product.GetOriginalWorldScale();
-            }
             StartPickupAnimation();
         }
     }
@@ -156,12 +252,9 @@ public class ObjectPickup : MonoBehaviour
     {
         if (heldObject == null) return;
         if (pickupCoroutine != null) StopCoroutine(pickupCoroutine);
-
-        if (heldObject.TryGetComponent(out Rigidbody rb)) rb.isKinematic = true;
-
+        if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
         Transform targetHoldPosition = heldObject.CompareTag("SlipTag") ? slipHoldPosition : holdPosition;
         pickupCoroutine = StartCoroutine(SmoothPickupCoroutine(heldObject.transform, targetHoldPosition));
-
         if (heldObject.TryGetComponent<Product>(out Product product)) product.OnPickedUp();
         if (heldObject.TryGetComponent<Slip>(out Slip slip)) slip.OnPickedUp();
     }
@@ -171,23 +264,18 @@ public class ObjectPickup : MonoBehaviour
         float elapsedTime = 0f;
         Vector3 startPosition = objectToMove.position;
         Quaternion startRotation = objectToMove.rotation;
-
         while (elapsedTime < pickupDuration)
         {
             elapsedTime += Time.deltaTime;
             float progress = Mathf.Clamp01(elapsedTime / pickupDuration);
             if (useSmoothStep) progress = Mathf.SmoothStep(0, 1, progress);
-
             objectToMove.position = Vector3.Lerp(startPosition, targetHoldPosition.position, progress);
             objectToMove.rotation = Quaternion.Slerp(startRotation, targetHoldPosition.rotation, progress);
-
             yield return null;
         }
-
         objectToMove.SetParent(targetHoldPosition);
         objectToMove.position = targetHoldPosition.position;
         objectToMove.rotation = targetHoldPosition.rotation;
-
         if (objectToMove.CompareTag("Pickup"))
         {
             objectToMove.localPosition = Vector3.zero;
@@ -201,77 +289,11 @@ public class ObjectPickup : MonoBehaviour
         pickupCoroutine = null;
     }
 
-    private void DropObject()
-    {
-        if (heldObject == null) return;
-        if (pickupCoroutine != null)
-        {
-            StopCoroutine(pickupCoroutine);
-            pickupCoroutine = null;
-        }
-
-        Vector3 lastHeldPosition = heldObject.transform.position;
-        heldObject.transform.SetParent(null);
-
-        if (heldObject.TryGetComponent<Product>(out var product))
-        {
-            heldObject.transform.localScale = product.GetOriginalWorldScale();
-            product.isHeld = false;
-        }
-        if (heldObject.TryGetComponent<Slip>(out var slip))
-        {
-            heldObject.transform.localScale = slip.GetOriginalScale();
-            slip.OnDropped();
-        }
-
-        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.isKinematic = false;
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
-
-        Vector3 dropPosition = FindSafeDropPosition(lastHeldPosition);
-        heldObject.transform.position = dropPosition;
-        heldObject.transform.rotation = Quaternion.identity;
-
-        Debug.Log($"[DropObject] {heldObject.name} objesi {dropPosition} pozisyonuna bırakıldı.");
-
-        heldObject = null;
-    }
-
-    private Vector3 FindSafeDropPosition(Vector3 dropOrigin)
-    {
-        Vector3 checkDirection = mainCamera.transform.forward;
-        checkDirection.y = 0;
-        checkDirection.Normalize();
-
-        Vector3 targetPoint = dropOrigin + checkDirection * 0.1f;
-
-        // Hata ayıklama için ışını Scene'de görünür yapalım
-        Debug.DrawRay(targetPoint, Vector3.down * 5f, Color.red, 2f);
-
-        if (Physics.Raycast(targetPoint, Vector3.down, out RaycastHit hit, 5f, groundLayerMask))
-        {
-            Debug.Log($"[FindSafeDropPosition] Güvenli zemin bulundu! Çarpılan obje: {hit.collider.name}");
-            float objectHeight = heldObject.transform.lossyScale.y;
-            return hit.point + new Vector3(0, objectHeight / 2 + 0.05f, 0);
-        }
-        else
-        {
-            Debug.LogError("[FindSafeDropPosition] Güvenli zemin bulunamadı! Fallback pozisyonu kullanılıyor. Lütfen Ground Layer Mask ayarınızı kontrol edin.");
-            return transform.position + transform.forward * dropForwardOffset;
-        }
-    }
-
     private void TryPlaceObjectOnShelf()
     {
         if (heldObject == null) return;
-
         Product productToPlace = heldObject.GetComponent<Product>();
         if (productToPlace == null) { DropObject(); return; }
-
         foreach (Transform slot in shelfSlots)
         {
             if (slot.childCount == 0)
@@ -279,7 +301,6 @@ public class ObjectPickup : MonoBehaviour
                 heldObject.transform.SetParent(slot);
                 heldObject.transform.localPosition = Vector3.zero;
                 heldObject.transform.localRotation = Quaternion.identity;
-
                 Vector3 parentWorldScale = slot.lossyScale;
                 Vector3 originalWorldScale = productToPlace.GetOriginalWorldScale();
                 heldObject.transform.localScale = new Vector3(
@@ -287,9 +308,7 @@ public class ObjectPickup : MonoBehaviour
                     originalWorldScale.y / (parentWorldScale.y == 0 ? 1 : parentWorldScale.y),
                     originalWorldScale.z / (parentWorldScale.z == 0 ? 1 : parentWorldScale.z)
                 );
-
-                if (heldObject.TryGetComponent(out Rigidbody rb)) rb.isKinematic = true;
-
+                if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
                 productToPlace.isHeld = false;
                 heldObject = null;
                 return;
@@ -302,7 +321,6 @@ public class ObjectPickup : MonoBehaviour
     {
         if (heldObject == null || cargoBox == null) return;
         Product product = heldObject.GetComponent<Product>();
-
         if (product != null && cargoBox.TryPlaceProduct(product))
         {
             heldObject = null;
@@ -310,24 +328,6 @@ public class ObjectPickup : MonoBehaviour
         else
         {
             DropObject();
-        }
-    }
-
-    private void HighlightObjectUnderMouse()
-    {
-        if (mainCamera == null) return;
-        Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-        GameObject objectFoundByRay = null;
-        if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, interactableLayers))
-        {
-            if (hit.collider.gameObject != heldObject) objectFoundByRay = hit.collider.gameObject;
-        }
-
-        if (highlightedObject != objectFoundByRay)
-        {
-            if (highlightedObject != null) RemoveHighlight();
-            highlightedObject = objectFoundByRay;
-            if (highlightedObject != null) ApplyHighlight(highlightedObject);
         }
     }
 
@@ -349,7 +349,6 @@ public class ObjectPickup : MonoBehaviour
         if (highlightedObject.TryGetComponent<Slip>(out Slip slip)) slip.Highlight(false);
         else if (highlightedObject.TryGetComponent<Renderer>(out Renderer renderer) && isHighlighted)
             renderer.material.color = originalColor;
-
         isHighlighted = false;
     }
 
