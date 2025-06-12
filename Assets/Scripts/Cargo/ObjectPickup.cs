@@ -1,19 +1,27 @@
 ﻿using UnityEngine;
-using System.Collections; // Coroutine için (şimdilik kullanılmıyor ama gelecekte gerekebilir)
+using System.Collections;
 
 public class ObjectPickup : MonoBehaviour
 {
+    [Header("Tutma ve Mesafe Ayarları")]
     [SerializeField] private Transform holdPosition;
     [SerializeField] private Transform slipHoldPosition;
     [SerializeField] private float pickupDistance = 5.0f;
-    [SerializeField] private float lerpSpeed = 20f;
+    [SerializeField] private float shelfPlaceDistance = 2.0f;
+    [SerializeField] private float cargoPlaceDistance = 7.0f;
+
+    [Header("Yumuşak Alma Animasyon Ayarları")]
+    [Tooltip("Objenin ele gelme animasyonunun saniye cinsinden süresi.")]
+    [SerializeField] private float pickupDuration = 0.25f;
+    [Tooltip("Animasyonun başlangıç ve bitişini yavaşlatarak daha yumuşak bir his verir.")]
+    [SerializeField] private bool useSmoothStep = true;
+
+    [Header("Diğer Ayarlar")]
     [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f);
     [SerializeField] private GameObject crosshair;
     [SerializeField] private Transform[] shelfSlots;
-    [SerializeField] private float shelfPlaceDistance = 2.0f;
-    [SerializeField] private float cargoPlaceDistance = 7.0f;
     [SerializeField] private LayerMask groundLayerMask;
-    [SerializeField] private float dropForwardOffset = 2.0f; // Bu, basit testte kullanılmayacak ama kalsın
+    [SerializeField] private float dropForwardOffset = 1.5f;
 
     private GameObject heldObject;
     private GameObject highlightedObject;
@@ -23,737 +31,354 @@ public class ObjectPickup : MonoBehaviour
     private GameObject shelf;
     private LayerMask pickupLayer;
     private LayerMask slipLayer;
-    private bool isProcessingInput = false;
-    private Transform currentHoldPosition;
-
-    private Vector3 originalWorldScale;
-    private Quaternion originalLocalRotation;
+    private Coroutine pickupCoroutine;
 
     private void Awake()
     {
         mainCamera = Camera.main;
         if (mainCamera == null) Debug.LogError("Main Camera bulunamadı!", this);
-
         if (holdPosition == null) Debug.LogError("HoldPosition atanmamış!", this);
-        else
-        {
-            if (holdPosition.localScale != Vector3.one)
-            {
-                Debug.LogWarning("HoldPosition’ın ölçeği (1,1,1) değil! Ölçek (1,1,1) olarak sıfırlanıyor.");
-                holdPosition.localScale = Vector3.one;
-            }
-        }
-
-        if (slipHoldPosition == null) Debug.LogError("SlipHoldPosition atanmamış! Ölçek ayarlanamıyor.", this);
-        else
-        {
-            slipHoldPosition.localScale = new Vector3(2f, 2f, 2f);
-        }
-
+        if (slipHoldPosition == null) Debug.LogError("SlipHoldPosition atanmamış!", this);
         if (crosshair == null) Debug.LogError("Crosshair atanmamış!", this);
         if (shelfSlots == null || shelfSlots.Length == 0) Debug.LogError("ShelfSlots atanmamış!", this);
-
         shelf = GameObject.FindWithTag("Shelf");
         if (shelf == null) Debug.LogError("Shelf tag’lı obje bulunamadı!", this);
-
         pickupLayer = LayerMask.GetMask("Pickup");
         slipLayer = LayerMask.GetMask("Slip");
-
-        if (groundLayerMask == 0)
-        {
-            Debug.LogWarning("Ground Layer Mask atanmamış! Physics.DefaultRaycastLayers kullanılacak, bu istenmeyen sonuçlara yol açabilir.");
-        }
     }
 
     private void Update()
     {
-        try
-        {
-            HandleInput();
-            UpdateHeldObjectPosition();
-            HighlightObjectUnderMouse();
-            UpdateCrosshairVisibility();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Update sırasında hata: {e.Message}\n{e.StackTrace}");
-        }
+        HandleInput();
+        HighlightObjectUnderMouse();
+        UpdateCrosshairVisibility();
     }
 
     private void HandleInput()
     {
-        try
+        // Sol Tık Mantığı
+        if (Input.GetMouseButtonDown(0))
         {
-            if (isProcessingInput) return;
-            if (Input.GetMouseButtonDown(0))
+            if (pickupCoroutine != null) return;
+
+            if (heldObject == null)
             {
-                isProcessingInput = true;
-                if (heldObject == null)
+                Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+                if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance))
                 {
-                    TryPickupFromCargoBox();
-                    if (heldObject == null)
+                    CargoBoxProxy proxy = hit.collider.GetComponentInParent<CargoBoxProxy>();
+                    if (proxy != null && proxy.RealCargoBox != null)
                     {
-                        TryPickupFromShelf();
-                    }
-                }
-                else
-                {
-                    if (IsNearShelf())
-                    {
-                        TryPlaceObjectOnShelf();
-                    }
-                    else if (IsNearCargoBox(out CargoBox cargoBox))
-                    {
-                        TryPlaceObjectInCargoBox(cargoBox);
+                        TryPickupFromCargoBox(proxy.RealCargoBox, ray);
                     }
                     else
                     {
-                        DropObject();
+                        TryPickupFromWorld(hit);
                     }
                 }
-                isProcessingInput = false;
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"HandleInput sırasında hata: {e.Message}\n{e.StackTrace}");
-            isProcessingInput = false;
-        }
-    }
-
-    private void SetupHeldObject()
-    {
-        if (heldObject == null) return;
-        try
-        {
-            originalWorldScale = heldObject.transform.lossyScale;
-            originalLocalRotation = heldObject.transform.localRotation;
-
-            if (heldObject.CompareTag("SlipTag"))
-            {
-                currentHoldPosition = slipHoldPosition;
             }
             else
             {
-                currentHoldPosition = holdPosition;
-            }
-
-            if (currentHoldPosition == null)
-            {
-                Debug.LogError($"Hata: currentHoldPosition null! Obje: {heldObject.name}, Tag: {heldObject.tag}");
-                if (this.heldObject != null) DropObject();
-                return;
-            }
-
-            heldObject.transform.SetParent(currentHoldPosition);
-            heldObject.transform.localPosition = Vector3.zero;
-
-            if (heldObject.CompareTag("SlipTag"))
-            {
-                heldObject.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
-            }
-            else
-            {
-                heldObject.transform.localRotation = Quaternion.identity;
-            }
-
-            heldObject.transform.localScale = originalWorldScale;
-
-            if (heldObject.TryGetComponent(out Rigidbody rb))
-            {
-                rb.isKinematic = true;
-                rb.velocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-            }
-
-            if (heldObject.TryGetComponent(out Product product)) product.OnPickedUp();
-            else if (heldObject.TryGetComponent<Slip>(out Slip slip) && heldObject.CompareTag("SlipTag"))
-            {
-                // Slip.OnPickedUp(), TryPickupFromShelf içinde çağrılıyor.
-            }
-
-            heldObject.SetActive(true);
-            Renderer renderer = heldObject.GetComponent<Renderer>();
-            if (renderer != null) renderer.enabled = true;
-
-            if (!heldObject.activeSelf || (renderer != null && !renderer.enabled))
-                Debug.LogError($"HeldObject {heldObject.name} görünür değil! Active: {heldObject.activeSelf}, Renderer Enabled: {(renderer != null ? renderer.enabled.ToString() : "N/A")}");
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"SetupHeldObject sırasında hata ({heldObject?.name}): {e.Message}\n{e.StackTrace}");
-        }
-    }
-
-    private void UpdateHeldObjectPosition()
-    {
-        if (heldObject == null || currentHoldPosition == null) return;
-        try
-        {
-            Transform targetParent = null;
-            if (heldObject.CompareTag("SlipTag"))
-            {
-                if (currentHoldPosition != slipHoldPosition) targetParent = slipHoldPosition;
-            }
-            else if (heldObject.CompareTag("Pickup"))
-            {
-                if (currentHoldPosition != holdPosition) targetParent = holdPosition;
-            }
-
-            if (targetParent != null)
-            {
-                currentHoldPosition = targetParent;
-                if (heldObject.transform.parent != currentHoldPosition)
+                if (IsNearCargoBox(out CargoBox targetCargoBox))
                 {
-                    heldObject.transform.SetParent(currentHoldPosition);
+                    TryPlaceObjectInCargoBox(targetCargoBox);
+                }
+                else if (IsNearShelf())
+                {
+                    TryPlaceObjectOnShelf();
+                }
+                else
+                {
+                    DropObject();
                 }
             }
-
-            heldObject.transform.position = Vector3.Lerp(heldObject.transform.position, currentHoldPosition.position, Time.deltaTime * lerpSpeed);
-
-            if (heldObject.CompareTag("SlipTag"))
-            {
-                heldObject.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
-            }
         }
-        catch (System.Exception e)
+
+        // Sağ Tık Mantığı
+        if (Input.GetMouseButtonDown(1))
         {
-            Debug.LogError($"UpdateHeldObjectPosition sırasında hata ({heldObject?.name}): {e.Message}\n{e.StackTrace}");
+            if (heldObject != null || pickupCoroutine != null) return;
+
+            Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+            if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance))
+            {
+                CargoBoxProxy proxy = hit.collider.GetComponentInParent<CargoBoxProxy>();
+                if (proxy != null && proxy.RealCargoBox != null)
+                {
+                    proxy.RealCargoBox.ToggleLids();
+                }
+            }
         }
     }
 
     private void UpdateCrosshairVisibility()
     {
-        try
+        if (crosshair != null)
         {
-            if (crosshair != null) crosshair.SetActive(heldObject == null);
+            bool shouldBeActive = (heldObject == null && pickupCoroutine == null);
+            if (crosshair.activeSelf != shouldBeActive)
+            {
+                crosshair.SetActive(shouldBeActive);
+            }
         }
-        catch (System.Exception e)
+    }
+
+    private void TryPickupFromCargoBox(CargoBox cargoBox, Ray ray)
+    {
+        Product product = cargoBox.TryRemoveProduct(ray.origin, ray.direction, pickupDistance);
+        if (product != null)
         {
-            Debug.LogError($"UpdateCrosshairVisibility sırasında hata: {e.Message}\n{e.StackTrace}");
+            heldObject = product.gameObject;
+            if (heldObject.transform.parent != null)
+            {
+                heldObject.transform.SetParent(null);
+                heldObject.transform.localScale = product.GetOriginalWorldScale();
+            }
+            StartPickupAnimation();
+        }
+    }
+
+    private void TryPickupFromWorld(RaycastHit hit)
+    {
+        GameObject targetObject = hit.collider.gameObject;
+        if (targetObject.CompareTag("Pickup") || targetObject.CompareTag("SlipTag"))
+        {
+            if (targetObject.TryGetComponent<Product>(out var product) && targetObject.transform.parent != null)
+            {
+                targetObject.transform.SetParent(null);
+                targetObject.transform.localScale = product.GetOriginalWorldScale();
+            }
+            if (targetObject.TryGetComponent<Slip>(out var slip) && targetObject.transform.parent != null)
+            {
+                targetObject.transform.SetParent(null);
+                targetObject.transform.localScale = slip.GetOriginalScale();
+            }
+            heldObject = targetObject;
+            if (highlightedObject == heldObject) RemoveHighlight();
+            StartPickupAnimation();
+        }
+    }
+
+    private void StartPickupAnimation()
+    {
+        if (heldObject == null) return;
+        if (pickupCoroutine != null) StopCoroutine(pickupCoroutine);
+
+        if (heldObject.TryGetComponent(out Rigidbody rb)) rb.isKinematic = true;
+
+        Transform targetHoldPosition = heldObject.CompareTag("SlipTag") ? slipHoldPosition : holdPosition;
+        pickupCoroutine = StartCoroutine(SmoothPickupCoroutine(heldObject.transform, targetHoldPosition));
+
+        if (heldObject.TryGetComponent(out Product product)) product.OnPickedUp();
+        if (heldObject.TryGetComponent<Slip>(out Slip slip)) slip.OnPickedUp();
+    }
+
+    private IEnumerator SmoothPickupCoroutine(Transform objectToMove, Transform targetHoldPosition)
+    {
+        float elapsedTime = 0f;
+        Vector3 startPosition = objectToMove.position;
+        Quaternion startRotation = objectToMove.rotation;
+
+        while (elapsedTime < pickupDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsedTime / pickupDuration);
+            if (useSmoothStep) progress = Mathf.SmoothStep(0, 1, progress);
+
+            objectToMove.position = Vector3.Lerp(startPosition, targetHoldPosition.position, progress);
+            objectToMove.rotation = Quaternion.Slerp(startRotation, targetHoldPosition.rotation, progress);
+
+            yield return null;
+        }
+
+        objectToMove.SetParent(targetHoldPosition);
+        objectToMove.position = targetHoldPosition.position;
+        objectToMove.rotation = targetHoldPosition.rotation;
+
+        if (objectToMove.CompareTag("Pickup"))
+        {
+            objectToMove.localPosition = Vector3.zero;
+            objectToMove.localRotation = Quaternion.identity;
+        }
+        else if (objectToMove.CompareTag("SlipTag"))
+        {
+            objectToMove.localPosition = Vector3.zero;
+            objectToMove.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+        }
+        pickupCoroutine = null;
+    }
+
+    private void DropObject()
+    {
+        if (heldObject == null) return;
+        if (pickupCoroutine != null)
+        {
+            StopCoroutine(pickupCoroutine);
+            pickupCoroutine = null;
+        }
+
+        Vector3 lastHeldPosition = heldObject.transform.position;
+        heldObject.transform.SetParent(null);
+
+        if (heldObject.TryGetComponent<Product>(out var product))
+        {
+            heldObject.transform.localScale = product.GetOriginalWorldScale();
+            product.isHeld = false;
+        }
+        if (heldObject.TryGetComponent<Slip>(out var slip))
+        {
+            heldObject.transform.localScale = slip.GetOriginalScale();
+            slip.OnDropped();
+        }
+
+        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        Vector3 dropPosition = FindSafeDropPosition(lastHeldPosition);
+        heldObject.transform.position = dropPosition;
+        heldObject.transform.rotation = Quaternion.identity;
+
+        heldObject = null;
+    }
+
+    private Vector3 FindSafeDropPosition(Vector3 dropOrigin)
+    {
+        Vector3 checkDirection = mainCamera.transform.forward;
+        checkDirection.y = 0;
+        checkDirection.Normalize();
+
+        Vector3 targetPoint = dropOrigin + checkDirection * 0.1f;
+
+        if (Physics.Raycast(targetPoint, Vector3.down, out RaycastHit hit, 5f, groundLayerMask))
+        {
+            float objectHeight = heldObject.transform.lossyScale.y;
+            return hit.point + new Vector3(0, objectHeight / 2 + 0.05f, 0);
+        }
+        else
+        {
+            return transform.position + transform.forward * dropForwardOffset;
+        }
+    }
+
+    private void TryPlaceObjectOnShelf()
+    {
+        if (heldObject == null) return;
+
+        Product productToPlace = heldObject.GetComponent<Product>();
+        if (productToPlace == null) { DropObject(); return; }
+
+        foreach (Transform slot in shelfSlots)
+        {
+            if (slot.childCount == 0)
+            {
+                heldObject.transform.SetParent(slot);
+                heldObject.transform.localPosition = Vector3.zero;
+                heldObject.transform.localRotation = Quaternion.identity;
+
+                Vector3 parentWorldScale = slot.lossyScale;
+                Vector3 originalWorldScale = productToPlace.GetOriginalWorldScale();
+                heldObject.transform.localScale = new Vector3(
+                    originalWorldScale.x / (parentWorldScale.x == 0 ? 1 : parentWorldScale.x),
+                    originalWorldScale.y / (parentWorldScale.y == 0 ? 1 : parentWorldScale.y),
+                    originalWorldScale.z / (parentWorldScale.z == 0 ? 1 : parentWorldScale.z)
+                );
+
+                if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
+
+                productToPlace.isHeld = false;
+                heldObject = null;
+                return;
+            }
+        }
+        DropObject();
+    }
+
+    private void TryPlaceObjectInCargoBox(CargoBox cargoBox)
+    {
+        if (heldObject == null || cargoBox == null) return;
+        Product product = heldObject.GetComponent<Product>();
+
+        if (product != null && cargoBox.TryPlaceProduct(product))
+        {
+            heldObject = null;
+        }
+        else
+        {
+            DropObject();
         }
     }
 
     private void HighlightObjectUnderMouse()
     {
         if (mainCamera == null) return;
-        try
+        Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+        GameObject objectFoundByRay = null;
+        if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, pickupLayer | slipLayer))
         {
-            Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
-            Ray ray = mainCamera.ScreenPointToRay(screenCenter);
-
-            bool hitSlip = Physics.Raycast(ray, out RaycastHit slipHit, pickupDistance, slipLayer);
-            bool hitPickup = Physics.Raycast(ray, out RaycastHit pickupHit, pickupDistance, pickupLayer);
-
-            GameObject objectFoundByRay = null;
-            if (hitSlip)
-            {
-                GameObject hitObject = slipHit.collider.gameObject;
-                if (hitObject.CompareTag("SlipTag") && hitObject != heldObject)
-                {
-                    objectFoundByRay = hitObject;
-                }
-            }
-
-            if (objectFoundByRay == null && hitPickup)
-            {
-                GameObject hitObject = pickupHit.collider.gameObject;
-                if (hitObject.CompareTag("Pickup") && hitObject != heldObject)
-                {
-                    objectFoundByRay = hitObject;
-                }
-            }
-
-            if (highlightedObject != objectFoundByRay)
-            {
-                if (highlightedObject != null)
-                {
-                    RemoveHighlight();
-                }
-                highlightedObject = objectFoundByRay;
-                if (highlightedObject != null)
-                {
-                    ApplyHighlight(highlightedObject);
-                }
-            }
+            if (hit.collider.gameObject != heldObject) objectFoundByRay = hit.collider.gameObject;
         }
-        catch (System.Exception e)
+
+        if (highlightedObject != objectFoundByRay)
         {
-            Debug.LogError($"HighlightObjectUnderMouse sırasında hata: {e.Message}\n{e.StackTrace}");
+            if (highlightedObject != null) RemoveHighlight();
+            highlightedObject = objectFoundByRay;
+            if (highlightedObject != null) ApplyHighlight(highlightedObject);
         }
     }
 
-    private void ApplyHighlight(GameObject objToHighlight)
+    private void ApplyHighlight(GameObject obj)
     {
-        if (objToHighlight == null) return;
-        try
+        if (obj == null) return;
+        if (obj.TryGetComponent<Slip>(out Slip slip)) slip.Highlight(true);
+        else if (obj.TryGetComponent<Renderer>(out Renderer renderer))
         {
-            if (objToHighlight.TryGetComponent<Slip>(out Slip slipComponent))
-            {
-                slipComponent.Highlight(true);
-            }
-            else if (objToHighlight.CompareTag("Pickup") && objToHighlight.TryGetComponent<Renderer>(out Renderer renderer))
-            {
-                if (objToHighlight.TryGetComponent<Product>(out _))
-                {
-                    originalColor = renderer.material.color;
-                    renderer.material.color = highlightColor;
-                    isHighlighted = true;
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"ApplyHighlight sırasında hata ({objToHighlight?.name}): {e.Message}\n{e.StackTrace}");
+            originalColor = renderer.material.color;
+            renderer.material.color = highlightColor;
+            isHighlighted = true;
         }
     }
 
     private void RemoveHighlight()
     {
         if (highlightedObject == null) return;
-        try
-        {
-            if (highlightedObject.TryGetComponent<Slip>(out Slip slipComponent))
-            {
-                slipComponent.Highlight(false);
-            }
-            else if (highlightedObject.CompareTag("Pickup") && highlightedObject.TryGetComponent<Renderer>(out Renderer renderer))
-            {
-                if (highlightedObject.TryGetComponent<Product>(out _))
-                {
-                    if (isHighlighted)
-                    {
-                        renderer.material.color = originalColor;
-                    }
-                }
-            }
-            isHighlighted = false;
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"RemoveHighlight sırasında hata ({highlightedObject?.name}): {e.Message}\n{e.StackTrace}");
-        }
+        if (highlightedObject.TryGetComponent<Slip>(out Slip slip)) slip.Highlight(false);
+        else if (highlightedObject.TryGetComponent<Renderer>(out Renderer renderer) && isHighlighted)
+            renderer.material.color = originalColor;
+
+        isHighlighted = false;
     }
 
-    private void TryPickupFromCargoBox()
-    {
-        if (mainCamera == null || heldObject != null) return;
-        try
-        {
-            Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
-            Ray ray = mainCamera.ScreenPointToRay(screenCenter);
-            Collider[] hits = Physics.OverlapSphere(mainCamera.transform.position, cargoPlaceDistance, LayerMask.GetMask("CargoBox"));
-            foreach (Collider hit in hits)
-            {
-                if (hit.CompareTag("CargoBox"))
-                {
-                    CargoBox cargoBox = hit.GetComponent<CargoBox>();
-                    if (cargoBox != null)
-                    {
-                        Product product = cargoBox.TryRemoveProduct(ray.origin, ray.direction, pickupDistance);
-                        if (product != null)
-                        {
-                            heldObject = product.gameObject;
-                            SetupHeldObject();
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"TryPickupFromCargoBox sırasında hata: {e.Message}\n{e.StackTrace}");
-        }
-    }
-
-    private void TryPickupFromShelf()
-    {
-        if (mainCamera == null || heldObject != null) return;
-        try
-        {
-            Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
-            Ray ray = mainCamera.ScreenPointToRay(screenCenter);
-            RaycastHit hitInfo;
-
-            if (Physics.Raycast(ray, out hitInfo, pickupDistance, slipLayer))
-            {
-                GameObject targetObject = hitInfo.collider.gameObject;
-                if (targetObject.CompareTag("SlipTag"))
-                {
-                    heldObject = targetObject;
-                    if (highlightedObject == heldObject) RemoveHighlight();
-                    SetupHeldObject();
-                    if (heldObject.TryGetComponent<Slip>(out Slip slipComponent))
-                    {
-                        slipComponent.OnPickedUp();
-                    }
-                    return;
-                }
-            }
-
-            if (Physics.Raycast(ray, out hitInfo, pickupDistance, pickupLayer))
-            {
-                GameObject targetObject = hitInfo.collider.gameObject;
-                if (targetObject.CompareTag("Pickup"))
-                {
-                    heldObject = targetObject;
-                    if (highlightedObject == heldObject) RemoveHighlight();
-                    SetupHeldObject();
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"TryPickupFromShelf sırasında hata: {e.Message}\n{e.StackTrace}");
-        }
-    }
-
-    private void DropObject()
-    {
-        if (heldObject == null) return;
-
-        GameObject objectToDrop = heldObject;
-
-        try
-        {
-            // --- PRODUCT'LAR İÇİN GEÇİCİ BASİT BIRAKMA TESTİ ---
-            if (objectToDrop.CompareTag("Pickup")) // Product ise
-            {
-                Debug.LogWarning($"[DropObject_ProductTest] {objectToDrop.name} BASİT BIRAKMA mantığı ile bırakılıyor.");
-                objectToDrop.transform.SetParent(null);
-
-                // Oyuncunun (bu script'in bağlı olduğu transform) biraz önüne ve biraz yukarısına bırak
-                Vector3 testDropPos = transform.position + transform.forward * 2.0f + transform.up * 0.5f;
-                objectToDrop.transform.position = testDropPos;
-                objectToDrop.transform.rotation = Quaternion.identity; // Dünya rotasyonunu sıfırla
-                objectToDrop.transform.localScale = originalWorldScale; // Orijinal dünya ölçeğini geri yükle
-
-                if (objectToDrop.TryGetComponent(out Rigidbody rbP)) // 'rbP' Product için
-                {
-                    rbP.isKinematic = false;
-                    rbP.velocity = Vector3.zero;
-                    rbP.angularVelocity = Vector3.zero;
-                    // Product prefab'ının Collision Detection ayarını kullanması için burada zorlamıyoruz,
-                    // ama test için ContinuousSpeculative yapabilirsiniz:
-                    // rbP.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                    Debug.Log($"[DropObject_ProductTest] {objectToDrop.name} Rigidbody: isKinematic={rbP.isKinematic}, collisionMode={rbP.collisionDetectionMode}, pos={objectToDrop.transform.position}");
-                }
-
-                if (objectToDrop.TryGetComponent<Product>(out Product productComponent))
-                {
-                    if (productComponent.isHeld) productComponent.isHeld = false;
-                }
-            }
-            // --- SLIP'LER VE DİĞERLERİ İÇİN NORMAL BIRAKMA MANTIĞI ---
-            else
-            {
-                Vector3 dropDirectionXZ = mainCamera.transform.forward;
-                dropDirectionXZ.y = 0;
-                if (dropDirectionXZ.sqrMagnitude < 0.001f)
-                {
-                    dropDirectionXZ = transform.forward;
-                    dropDirectionXZ.y = 0;
-                    if (dropDirectionXZ.sqrMagnitude < 0.001f)
-                    {
-                        dropDirectionXZ = transform.forward;
-                        if (dropDirectionXZ.sqrMagnitude < 0.001f) dropDirectionXZ = Vector3.forward;
-                    }
-                }
-                dropDirectionXZ.Normalize();
-
-                Vector3 horizontalDropBase = transform.position + dropDirectionXZ * dropForwardOffset;
-                Vector3 rayStartPoint = new Vector3(horizontalDropBase.x, transform.position.y + 1.0f, horizontalDropBase.z);
-
-                float objectHeightOffset = objectToDrop.transform.lossyScale.y / 2f;
-                objectHeightOffset = Mathf.Max(0.01f, objectHeightOffset);
-
-                Vector3 finalDropPosition;
-                bool groundFound = false;
-                RaycastHit groundHit;
-                float raycastDistance = 10f;
-
-                if (Physics.Raycast(rayStartPoint, Vector3.down, out groundHit, raycastDistance, groundLayerMask))
-                {
-                    finalDropPosition = groundHit.point + (Vector3.up * (objectHeightOffset + 0.02f));
-                    groundFound = true;
-                }
-                else
-                {
-                    finalDropPosition = new Vector3(horizontalDropBase.x,
-                                                    transform.position.y + objectHeightOffset,
-                                                    horizontalDropBase.z);
-                    Debug.LogWarning($"[DropObject] {objectToDrop.name} için zemin bulunamadı. Fallback pozisyonu: {finalDropPosition}");
-                }
-
-                // Debug.Log($"[DropObject] {objectToDrop.name} - Nihai Bırakma Pozisyonu: {finalDropPosition}, Zemin Bulundu: {groundFound}, Çarpılan: {(groundFound ? groundHit.collider.name : "Yok")}");
-
-                // Penetration Check (Slip veya diğerleri için de yapılabilir, şimdilik sadece Product için yukarıdaydı)
-                // ...
-
-                objectToDrop.transform.SetParent(null);
-                objectToDrop.transform.position = finalDropPosition;
-                objectToDrop.transform.localRotation = originalLocalRotation;
-                objectToDrop.transform.localScale = originalWorldScale;
-
-                if (objectToDrop.TryGetComponent(out Rigidbody rb))
-                {
-                    rb.isKinematic = false;
-                    rb.velocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-
-                    if (objectToDrop.CompareTag("SlipTag"))
-                    {
-                        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                    }
-                }
-
-                if (objectToDrop.TryGetComponent<Product>(out Product productComponent)) // Bu blok artık yukarıdaki özel Product bloğunda
-                {
-                    // if (productComponent.isHeld) productComponent.isHeld = false; 
-                }
-                if (objectToDrop.TryGetComponent<Slip>(out Slip slipComponent))
-                {
-                    slipComponent.OnDropped();
-                }
-            }
-
-            // Her iki dal için ortak:
-            objectToDrop.SetActive(true);
-            Renderer renderer = objectToDrop.GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                renderer.enabled = true;
-            }
-
-            if (this.heldObject == objectToDrop)
-            {
-                this.heldObject = null;
-                this.currentHoldPosition = null;
-            }
-
-            if (highlightedObject == objectToDrop)
-            {
-                highlightedObject = null;
-                isHighlighted = false;
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[DropObject] sırasında HATA ({objectToDrop?.name}): {e.Message}\n{e.StackTrace}");
-            if (objectToDrop != null)
-            {
-                Debug.LogWarning($"[DropObject] Hata sonrası {objectToDrop.name} için acil durum bırakma.");
-                if (!objectToDrop.activeSelf) objectToDrop.SetActive(true);
-                Renderer rend = objectToDrop.GetComponent<Renderer>();
-                if (rend != null && !rend.enabled) rend.enabled = true;
-                else if (rend == null) Debug.LogWarning($"[DropObject] Catch: {objectToDrop.name} için Renderer bulunamadı.");
-                if (objectToDrop.transform.parent != null) objectToDrop.transform.SetParent(null);
-                if (objectToDrop.TryGetComponent(out Rigidbody rbCatch))
-                {
-                    rbCatch.isKinematic = false;
-                    if (objectToDrop.CompareTag("SlipTag")) rbCatch.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                }
-                if (this.heldObject == objectToDrop) { this.heldObject = null; this.currentHoldPosition = null; }
-            }
-            else if (this.heldObject != null)
-            {
-                Debug.LogWarning($"[DropObject] Hata sonrası (objectToDrop null): {this.heldObject.name} zorla bırakılıyor.");
-                GameObject emergencyDropObj = this.heldObject;
-                if (!emergencyDropObj.activeSelf) emergencyDropObj.SetActive(true);
-                Renderer emergencyRend = emergencyDropObj.GetComponent<Renderer>();
-                if (emergencyRend != null && !emergencyRend.enabled) emergencyRend.enabled = true;
-                emergencyDropObj.transform.SetParent(null);
-                if (emergencyDropObj.TryGetComponent(out Rigidbody rbE))
-                {
-                    rbE.isKinematic = false;
-                    if (emergencyDropObj.CompareTag("SlipTag")) rbE.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                }
-                this.heldObject = null; this.currentHoldPosition = null;
-            }
-        }
-    }
-
-    private bool IsSlotOccupied(Transform slot)
-    {
-        if (slot == null) return true;
-        try
-        {
-            Collider[] colliders = Physics.OverlapSphere(slot.position, 0.1f, pickupLayer | slipLayer);
-            foreach (Collider col in colliders)
-            {
-                if (col.gameObject != heldObject && (col.CompareTag("Pickup") || col.CompareTag("SlipTag")))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"IsSlotOccupied sırasında hata ({slot?.name}): {e.Message}\n{e.StackTrace}");
-            return true;
-        }
-    }
-
-    private void TryPlaceObjectOnShelf()
-    {
-        if (heldObject == null || shelf == null || shelfSlots == null || shelfSlots.Length == 0)
-        {
-            if (heldObject != null) DropObject();
-            return;
-        }
-        try
-        {
-            if (heldObject.CompareTag("SlipTag") || heldObject.TryGetComponent<Slip>(out _))
-            {
-                DropObject();
-                return;
-            }
-
-            if (!heldObject.TryGetComponent<Product>(out _))
-            {
-                DropObject();
-                return;
-            }
-
-            for (int i = 0; i < shelfSlots.Length; i++)
-            {
-                if (shelfSlots[i] != null && !IsSlotOccupied(shelfSlots[i]))
-                {
-                    Transform targetSlot = shelfSlots[i];
-                    Vector3 parentWorldScale = targetSlot.lossyScale;
-                    parentWorldScale.x = Mathf.Approximately(parentWorldScale.x, 0) ? 1e-5f : parentWorldScale.x;
-                    parentWorldScale.y = Mathf.Approximately(parentWorldScale.y, 0) ? 1e-5f : parentWorldScale.y;
-                    parentWorldScale.z = Mathf.Approximately(parentWorldScale.z, 0) ? 1e-5f : parentWorldScale.z;
-
-                    heldObject.transform.SetParent(targetSlot);
-                    heldObject.transform.localPosition = Vector3.zero;
-                    heldObject.transform.localRotation = Quaternion.identity;
-                    heldObject.transform.localScale = new Vector3(
-                        originalWorldScale.x / parentWorldScale.x,
-                        originalWorldScale.y / parentWorldScale.y,
-                        originalWorldScale.z / parentWorldScale.z
-                    );
-
-                    if (heldObject.TryGetComponent(out Rigidbody rb))
-                    {
-                        rb.isKinematic = true;
-                        rb.velocity = Vector3.zero;
-                        rb.angularVelocity = Vector3.zero;
-                    }
-
-                    if (heldObject.TryGetComponent<Product>(out Product product)) product.isHeld = false;
-
-                    heldObject.SetActive(true);
-                    Renderer renderer = heldObject.GetComponent<Renderer>();
-                    if (renderer != null) renderer.enabled = true;
-
-                    heldObject = null;
-                    currentHoldPosition = null;
-                    return;
-                }
-            }
-            DropObject();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"TryPlaceObjectOnShelf sırasında hata ({heldObject?.name}): {e.Message}\n{e.StackTrace}");
-            if (this.heldObject != null) DropObject();
-        }
-    }
-
-    private void TryPlaceObjectInCargoBox(CargoBox cargoBox)
-    {
-        if (heldObject == null || cargoBox == null)
-        {
-            if (heldObject != null) DropObject();
-            return;
-        }
-        try
-        {
-            Product product = heldObject.GetComponent<Product>();
-            if (product == null)
-            {
-                DropObject();
-                return;
-            }
-            if (cargoBox.TryPlaceProduct(product))
-            {
-                heldObject = null;
-                currentHoldPosition = null;
-            }
-            else
-            {
-                DropObject();
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"TryPlaceObjectInCargoBox sırasında hata ({cargoBox?.name}, {heldObject?.name}): {e.Message}\n{e.StackTrace}");
-            if (this.heldObject != null) DropObject();
-        }
-    }
-
-    private bool IsNearShelf()
-    {
-        if (shelf == null) return false;
-        try
-        {
-            float distanceToShelf = Vector3.Distance(mainCamera.transform.position, shelf.transform.position);
-            return distanceToShelf <= shelfPlaceDistance;
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"IsNearShelf sırasında hata: {e.Message}\n{e.StackTrace}");
-            return false;
-        }
-    }
+    private bool IsNearShelf() => shelf != null && Vector3.Distance(mainCamera.transform.position, shelf.transform.position) <= shelfPlaceDistance;
 
     private bool IsNearCargoBox(out CargoBox cargoBox)
     {
         cargoBox = null;
-        try
+        Collider[] hits = Physics.OverlapSphere(mainCamera.transform.position, cargoPlaceDistance, LayerMask.GetMask("CargoBox"));
+        foreach (Collider hit in hits)
         {
-            Collider[] hits = Physics.OverlapSphere(mainCamera.transform.position, cargoPlaceDistance, LayerMask.GetMask("CargoBox"));
-            foreach (Collider hit in hits)
+            CargoBoxProxy proxy = hit.GetComponentInParent<CargoBoxProxy>();
+            if (proxy != null && proxy.RealCargoBox != null)
             {
-                if (hit.CompareTag("CargoBox"))
+                CargoBox cb = proxy.RealCargoBox;
+                if (!cb.IsFull() && !cb.IsBeingCarried())
                 {
-                    CargoBox cb = hit.GetComponent<CargoBox>();
-                    if (cb != null && !cb.IsFull() && !cb.IsBeingCarried())
-                    {
-                        cargoBox = cb;
-                        return true;
-                    }
+                    cargoBox = cb;
+                    return true;
                 }
             }
-            return false;
         }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"IsNearCargoBox sırasında hata: {e.Message}\n{e.StackTrace}");
-            return false;
-        }
+        return false;
     }
 
     public GameObject GetHeldObject() => heldObject;
-
     public void ClearHeldObject()
     {
-        if (heldObject != null)
-        {
-            heldObject.transform.SetParent(null);
-            if (heldObject.TryGetComponent(out Rigidbody rb) && rb.isKinematic)
-            {
-                rb.isKinematic = false;
-                if (heldObject.CompareTag("SlipTag"))
-                {
-                    // rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                }
-            }
-        }
+        if (heldObject != null) Destroy(heldObject);
         heldObject = null;
-        currentHoldPosition = null;
     }
 }
