@@ -126,15 +126,15 @@ public class InGameMarket : MonoBehaviour
         GameObject boxInstance = Instantiate(boxPrefabToSpawn, selectedSpawnSlot.position, Quaternion.identity);
         spawnedDeliveryBoxes.Add(boxInstance);
 
-        CargoBoxProxy proxy = boxInstance.GetComponent<CargoBoxProxy>();
-        if (proxy == null || proxy.RealCargoBox == null)
+        // DÜZELTME: Artık Proxy yok, doğrudan CargoBox script'ini alıyoruz.
+        CargoBox cargoBoxScript = boxInstance.GetComponent<CargoBox>();
+        if (cargoBoxScript == null)
         {
-            Debug.LogError($"Prefabde Proxy/RealCargoBox eksik: {boxPrefabToSpawn.name}");
+            Debug.LogError($"Oluşturulan prefabde CargoBox scripti bulunamadı: {boxPrefabToSpawn.name}");
             Destroy(boxInstance);
             return;
         }
 
-        CargoBox cargoBoxScript = proxy.RealCargoBox;
         OrderData supplierDeliveryOrder = new OrderData();
         supplierDeliveryOrder.InitializeCustomer();
         supplierDeliveryOrder.customerName = $"Tedarikçi - {product.productName}";
@@ -174,16 +174,16 @@ public class InGameMarket : MonoBehaviour
 
         GameObject boxInstance = Instantiate(boxPrefabToSpawn, spawnTransform.position, Quaternion.identity);
 
-        CargoBoxProxy proxy = boxInstance.GetComponent<CargoBoxProxy>();
-        if (proxy != null && proxy.RealCargoBox != null)
+        // DÜZELTME: Artık Proxy yok, doğrudan CargoBox script'ini alıyoruz.
+        CargoBox cargoBoxScript = boxInstance.GetComponent<CargoBox>();
+        if (cargoBoxScript != null)
         {
-            CargoBox cargoBoxScript = proxy.RealCargoBox;
             cargoBoxScript.AssignOrder(customerOrder);
             return boxInstance;
         }
         else
         {
-            Debug.LogError($"Kargo kutusu prefabı ({boxPrefabToSpawn.name}) üzerinde CargoBoxProxy scripti veya referansı eksik!");
+            Debug.LogError($"Kargo kutusu prefabı ({boxPrefabToSpawn.name}) üzerinde CargoBox scripti eksik!");
             Destroy(boxInstance);
             return null;
         }
@@ -218,19 +218,15 @@ public class InGameMarket : MonoBehaviour
         return -1;
     }
 
-    // Düzeltilmiş Fonksiyon
     public MarketProduct GetProductDefinitionByName(string name)
     {
         if (products == null || string.IsNullOrEmpty(name))
         {
             return null;
         }
-        // FirstOrDefault, koşulu sağlayan ilk elemanı veya bulamazsa varsayılan değeri (class'lar için null) döndürür.
-        // Bu, tüm kod yollarının bir değer döndürmesini sağlar.
         return products.FirstOrDefault(p => p != null && p.productName == name);
     }
 
-    // Diğer yardımcı fonksiyonlar
     void RemoveBoxFromSpawnedList(GameObject boxInstance) { spawnedDeliveryBoxes.Remove(boxInstance); }
     public void UpdatePriceUI_BuyPanel() { /*...*/ }
 }

@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,7 +10,7 @@ public class CargoBox : MonoBehaviour
     public OrderData assignedOrder;
 
     [Header("Animasyon Ayarları")]
-    [Tooltip("Root objenin üzerindeki Animator component'ini buraya sürükleyin.")]
+    [Tooltip("Bu obje üzerindeki Animator component'ini buraya sürükleyin.")]
     [SerializeField] private Animator boxAnimator;
 
     public bool IsOpen { get; private set; } = false;
@@ -20,16 +19,12 @@ public class CargoBox : MonoBehaviour
     private bool[] slotOccupied;
     private Rigidbody rb;
     private bool isBeingCarried = false;
-    private Collider boxCollider;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        boxCollider = GetComponent<Collider>();
-        if (rb == null) Debug.LogError($"CargoBox ({gameObject.name}): Rigidbody component'i eksik!");
-        if (boxCollider == null) Debug.LogError($"CargoBox ({gameObject.name}): Box Collider atanmamış!");
-        if (boxAnimator == null) Debug.LogError($"CargoBox ({gameObject.name}): Box Animator atanmamış!");
-
+        if (rb == null) Debug.LogError("Rigidbody component'i eksik!");
+        if (boxAnimator == null) Debug.LogError("Box Animator atanmamış!");
         if (productSlots != null && productSlots.Length > 0)
         {
             slotOccupied = new bool[productSlots.Length];
@@ -39,10 +34,7 @@ public class CargoBox : MonoBehaviour
     public void ToggleLids()
     {
         IsOpen = !IsOpen;
-        if (boxAnimator != null)
-        {
-            boxAnimator.SetBool("IsOpen", IsOpen);
-        }
+        if (boxAnimator != null) boxAnimator.SetBool("IsOpen", IsOpen);
     }
 
     public void SetLidStateForced(bool open)
@@ -56,15 +48,14 @@ public class CargoBox : MonoBehaviour
         }
     }
 
+    public void AssignOrder(OrderData order)
+    {
+        assignedOrder = order;
+    }
+
     public bool TryPlaceProduct(Product product)
     {
-        if (!IsOpen)
-        {
-            Debug.LogWarning($"Kutu kapalı ({gameObject.name}), ürün yerleştirilemez.");
-            return false;
-        }
-
-        if (product == null || IsFull() || (!isLargeBox && product.productDefinition.isLarge)) return false;
+        if (!IsOpen || IsFull() || (!isLargeBox && product.productDefinition.isLarge)) return false;
 
         int slotIndex = -1;
         for (int i = 0; i < slotOccupied.Length; i++)
@@ -75,14 +66,8 @@ public class CargoBox : MonoBehaviour
 
         Transform slot = productSlots[slotIndex];
 
-        Collider productCollider = product.GetComponent<Collider>();
-        if (productCollider != null && boxCollider != null)
-        {
-            Physics.IgnoreCollision(boxCollider, productCollider, true);
-        }
-
         product.transform.SetParent(slot);
-        product.transform.localPosition = Vector3.zero;
+        product.transform.localPosition = new Vector3(0, 0.01f, 0);
         product.transform.localRotation = Quaternion.identity;
 
         Vector3 originalWorldScale = product.GetOriginalWorldScale();
@@ -102,15 +87,11 @@ public class CargoBox : MonoBehaviour
 
     public Product TryRemoveProduct(Vector3 rayOrigin, Vector3 rayDirection, float maxDistance)
     {
-        if (!IsOpen) return null;
-        if (isBeingCarried) return null;
-
+        if (!IsOpen || isBeingCarried) return null;
         Product productToTake = GetProductAtRay(new Ray(rayOrigin, rayDirection), maxDistance);
-
         if (productToTake != null)
         {
             placedProducts.Remove(productToTake);
-
             int slotIndexToFree = -1;
             for (int i = 0; i < productSlots.Length; i++)
             {
@@ -121,21 +102,12 @@ public class CargoBox : MonoBehaviour
                 }
             }
             if (slotIndexToFree != -1) slotOccupied[slotIndexToFree] = false;
-
-            Collider productCollider = productToTake.GetComponent<Collider>();
-            if (productCollider != null && boxCollider != null)
-            {
-                Physics.IgnoreCollision(boxCollider, productCollider, false);
-            }
-
             productToTake.transform.SetParent(null);
             productToTake.transform.localScale = productToTake.GetOriginalWorldScale();
-
             if (productToTake.TryGetComponent<Rigidbody>(out Rigidbody productRb))
             {
                 productRb.isKinematic = false;
             }
-
             return productToTake;
         }
         return null;
@@ -144,11 +116,9 @@ public class CargoBox : MonoBehaviour
     public Product GetProductAtRay(Ray ray, float maxDistance)
     {
         if (!IsOpen) return null;
-
         RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance);
         Product closestProduct = null;
         float minDistance = float.MaxValue;
-
         foreach (RaycastHit hit in hits)
         {
             Product productInBox = hit.collider.GetComponent<Product>();
@@ -164,7 +134,6 @@ public class CargoBox : MonoBehaviour
         return closestProduct;
     }
 
-    public void AssignOrder(OrderData order) => assignedOrder = order;
     public bool IsFull() => productSlots != null && placedProducts.Count >= productSlots.Length;
     public void OnPickedUp() { isBeingCarried = true; if (rb != null) rb.isKinematic = true; }
     public void OnDropped() { isBeingCarried = false; if (rb != null) rb.isKinematic = false; }
