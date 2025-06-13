@@ -64,6 +64,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: LittleBigNew
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 65dd6719cc1b2524496d31c560581e67, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 65dd6719cc1b2524496d31c560581e67, type: 3}
+      propertyPath: m_TagString
+      value: CargoBox
+      objectReference: {fileID: 0}
     - target: {fileID: 2584131056881629022, guid: 65dd6719cc1b2524496d31c560581e67, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: -89.98021
@@ -91,6 +99,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 65dd6719cc1b2524496d31c560581e67, type: 3}
       insertIndex: -1
       addedObject: {fileID: 256126625874930288}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 65dd6719cc1b2524496d31c560581e67, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1218698913490204531}
     - targetCorrespondingSourceObject: {fileID: 5114242084540728617, guid: 65dd6719cc1b2524496d31c560581e67, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5682761474512227467}
@@ -127,6 +138,19 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1218698913490204531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 975830813476005842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb527fc1120fbec4ebb0dd70d74c4eab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  RealCargoBox: {fileID: 8445248017557074346}
 --- !u!4 &2014420087928366664 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -7296085107919373109, guid: 65dd6719cc1b2524496d31c560581e67, type: 3}
@@ -214,6 +238,7 @@ MonoBehaviour:
     status: 0
     totalOrderValue: 0
     timeMultiplierAtOrderCreation: 1
+  boxAnimator: {fileID: 256126625874930288}
 --- !u!4 &6477664401214175844 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6390317971323183335, guid: 65dd6719cc1b2524496d31c560581e67, type: 3}

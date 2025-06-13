@@ -64,6 +64,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: LargeSmallNew
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c1393d76fdf2da4468e6cbc5a915cb49, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c1393d76fdf2da4468e6cbc5a915cb49, type: 3}
+      propertyPath: m_TagString
+      value: CargoBox
+      objectReference: {fileID: 0}
     - target: {fileID: 3667966849801752450, guid: c1393d76fdf2da4468e6cbc5a915cb49, type: 3}
       propertyPath: m_Layer
       value: 11
@@ -91,6 +99,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c1393d76fdf2da4468e6cbc5a915cb49, type: 3}
       insertIndex: -1
       addedObject: {fileID: 12018659572180250}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c1393d76fdf2da4468e6cbc5a915cb49, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9138587549439478498}
     - targetCorrespondingSourceObject: {fileID: 3667966849801752450, guid: c1393d76fdf2da4468e6cbc5a915cb49, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6641083737589919239}
@@ -132,6 +143,19 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &9138587549439478498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5439303562781750015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb527fc1120fbec4ebb0dd70d74c4eab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  RealCargoBox: {fileID: 6641083737589919239}
 --- !u!1 &8456102581645983788 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3667966849801752450, guid: c1393d76fdf2da4468e6cbc5a915cb49, type: 3}
@@ -162,6 +186,7 @@ MonoBehaviour:
     status: 0
     totalOrderValue: 0
     timeMultiplierAtOrderCreation: 1
+  boxAnimator: {fileID: 12018659572180250}
 --- !u!64 &8989648026388081633
 MeshCollider:
   m_ObjectHideFlags: 0

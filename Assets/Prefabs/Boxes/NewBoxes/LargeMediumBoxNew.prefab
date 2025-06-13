@@ -72,6 +72,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: LargeMediumBoxNew
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ef16052969419d44e81b5d5d627ea76b, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ef16052969419d44e81b5d5d627ea76b, type: 3}
+      propertyPath: m_TagString
+      value: CargoBox
+      objectReference: {fileID: 0}
     - target: {fileID: 4386255483752385251, guid: ef16052969419d44e81b5d5d627ea76b, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.9381714
@@ -119,6 +127,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ef16052969419d44e81b5d5d627ea76b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1526597770679600293}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ef16052969419d44e81b5d5d627ea76b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8278914881860829344}
     - targetCorrespondingSourceObject: {fileID: -645401465325404238, guid: ef16052969419d44e81b5d5d627ea76b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7847429097862951798}
@@ -219,6 +230,7 @@ MonoBehaviour:
     status: 0
     totalOrderValue: 0
     timeMultiplierAtOrderCreation: 1
+  boxAnimator: {fileID: 1526597770679600293}
 --- !u!1 &7276349494202076607 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ef16052969419d44e81b5d5d627ea76b, type: 3}
@@ -245,3 +257,16 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &8278914881860829344
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7276349494202076607}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb527fc1120fbec4ebb0dd70d74c4eab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  RealCargoBox: {fileID: 3779144385243858672}

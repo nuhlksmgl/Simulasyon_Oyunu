@@ -60,6 +60,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: LittleSmallNew
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5622b7d2ac0428c4594f28f61c1a3d6c, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5622b7d2ac0428c4594f28f61c1a3d6c, type: 3}
+      propertyPath: m_TagString
+      value: CargoBox
+      objectReference: {fileID: 0}
     - target: {fileID: 5367101507883452715, guid: 5622b7d2ac0428c4594f28f61c1a3d6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: 43.275833
@@ -91,6 +99,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5622b7d2ac0428c4594f28f61c1a3d6c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 782964506883904187}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5622b7d2ac0428c4594f28f61c1a3d6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8663396941406456432}
     - targetCorrespondingSourceObject: {fileID: -1011610711461433549, guid: 5622b7d2ac0428c4594f28f61c1a3d6c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3606285251103717930}
@@ -131,6 +142,7 @@ MonoBehaviour:
     status: 0
     totalOrderValue: 0
     timeMultiplierAtOrderCreation: 1
+  boxAnimator: {fileID: 782964506883904187}
 --- !u!54 &6086136026143628295
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -206,6 +218,19 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &8663396941406456432
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6279997913555082398}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb527fc1120fbec4ebb0dd70d74c4eab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  RealCargoBox: {fileID: 3606285251103717930}
 --- !u!4 &9124511039642714564 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -6537353675837218805, guid: 5622b7d2ac0428c4594f28f61c1a3d6c, type: 3}
