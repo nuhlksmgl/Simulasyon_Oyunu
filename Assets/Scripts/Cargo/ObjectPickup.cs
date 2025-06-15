@@ -36,7 +36,10 @@ public class ObjectPickup : MonoBehaviour
     private LayerMask slipLayer;
     private LayerMask cargoBoxLayer;
     private LayerMask interactableLayers;
+
     private Coroutine pickupCoroutine;
+    private Coroutine containerPickupCoroutine;
+    private Vector3 originalContainerScale; // Kutunun orijinal boyutunu saklamak için değişken
 
     private void Awake()
     {
@@ -68,33 +71,19 @@ public class ObjectPickup : MonoBehaviour
 
     private void HandleInput()
     {
-        // SOL TIK ETKİLEŞİMLERİ
         if (Input.GetMouseButtonDown(0))
         {
-            // DURUM 1: Elimizde bir şey var (Bırakma veya Yerleştirme)
             if (heldObject != null)
             {
                 Ray placementRay = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
                 float placeDistance = Mathf.Max(shelfPlaceDistance, cargoPlaceDistance);
                 if (Physics.Raycast(placementRay, out RaycastHit placementHit, placeDistance))
                 {
-                    if (placementHit.collider.CompareTag("Shelf"))
-                    {
-                        TryPlaceObjectOnShelf();
-                    }
-                    else if (placementHit.collider.GetComponentInParent<CargoBox>() is CargoBox box)
-                    {
-                        TryPlaceObjectInCargoBox(box);
-                    }
-                    else
-                    {
-                        DropObject();
-                    }
+                    if (placementHit.collider.CompareTag("Shelf")) { TryPlaceObjectOnShelf(); }
+                    else if (placementHit.collider.GetComponentInParent<CargoBox>() is CargoBox box) { TryPlaceObjectInCargoBox(box); }
+                    else { DropObject(); }
                 }
-                else
-                {
-                    DropObject();
-                }
+                else { DropObject(); }
                 return;
             }
 
@@ -104,8 +93,7 @@ public class ObjectPickup : MonoBehaviour
                 return;
             }
 
-            // DURUM 2: Elimiz boş (Alma)
-            if (pickupCoroutine != null) return;
+            if (pickupCoroutine != null || containerPickupCoroutine != null) return;
 
             Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
             float maxDistance = Mathf.Max(pickupDistance, carryDistance);
@@ -120,10 +108,9 @@ public class ObjectPickup : MonoBehaviour
                     else if (Vector3.Distance(transform.position, hit.point) <= carryDistance)
                     {
                         carriedContainer = box.gameObject;
+                        originalContainerScale = carriedContainer.transform.localScale;
                         box.OnPickedUp();
-                        carriedContainer.transform.SetParent(containerHoldPosition);
-                        carriedContainer.transform.position = containerHoldPosition.position;
-                        carriedContainer.transform.rotation = containerHoldPosition.rotation;
+                        containerPickupCoroutine = StartCoroutine(SmoothContainerPickupCoroutine(carriedContainer.transform, containerHoldPosition));
                     }
                 }
                 else if (hit.collider.CompareTag("Pickup") || hit.collider.CompareTag("SlipTag"))
@@ -133,14 +120,12 @@ public class ObjectPickup : MonoBehaviour
             }
         }
 
-        // SAĞ TIK ETKİLEŞİMLERİ
         if (Input.GetMouseButtonDown(1))
         {
-            if (IsHoldingAnything() || pickupCoroutine != null) return;
+            if (IsHoldingAnything() || pickupCoroutine != null || containerPickupCoroutine != null) return;
             Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
             if (Physics.Raycast(ray, out RaycastHit hit, pickupDistance, cargoBoxLayer))
             {
-                // HATA DÜZELTME: Yanlış olan 'TryGetComponentInParent' komutu, çalışan versiyonuyla değiştirildi.
                 if (hit.collider.GetComponentInParent<CargoBox>() is CargoBox box)
                 {
                     box.ToggleLids();
@@ -153,7 +138,15 @@ public class ObjectPickup : MonoBehaviour
     {
         if (carriedContainer == null) return;
 
+        if (containerPickupCoroutine != null)
+        {
+            StopCoroutine(containerPickupCoroutine);
+            containerPickupCoroutine = null;
+        }
+
         carriedContainer.transform.SetParent(null);
+        carriedContainer.transform.localScale = originalContainerScale;
+
         if (carriedContainer.TryGetComponent<CargoBox>(out CargoBox box))
         {
             box.OnDropped();
@@ -258,7 +251,7 @@ public class ObjectPickup : MonoBehaviour
     {
         if (crosshair != null)
         {
-            bool shouldBeActive = (heldObject == null && carriedContainer == null && pickupCoroutine == null);
+            bool shouldBeActive = (heldObject == null && carriedContainer == null && pickupCoroutine == null && containerPickupCoroutine == null);
             if (crosshair.activeSelf != shouldBeActive)
             {
                 crosshair.SetActive(shouldBeActive);
@@ -336,6 +329,33 @@ public class ObjectPickup : MonoBehaviour
             objectToMove.localRotation = Quaternion.Euler(-90f, 0f, 0f);
         }
         pickupCoroutine = null;
+    }
+
+    private IEnumerator SmoothContainerPickupCoroutine(Transform objectToMove, Transform targetHoldPosition)
+    {
+        float elapsedTime = 0f;
+        Vector3 startPosition = objectToMove.position;
+        Quaternion startRotation = objectToMove.rotation;
+
+        while (elapsedTime < pickupDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsedTime / pickupDuration);
+            if (useSmoothStep) progress = Mathf.SmoothStep(0, 1, progress);
+
+            objectToMove.position = Vector3.Lerp(startPosition, targetHoldPosition.position, progress);
+            objectToMove.rotation = Quaternion.Slerp(startRotation, targetHoldPosition.rotation, progress);
+            yield return null;
+        }
+
+        objectToMove.SetParent(targetHoldPosition);
+        objectToMove.position = targetHoldPosition.position;
+        objectToMove.rotation = targetHoldPosition.rotation;
+
+        objectToMove.localPosition = Vector3.zero;
+        objectToMove.localRotation = Quaternion.identity;
+
+        containerPickupCoroutine = null;
     }
 
     private void TryPlaceObjectOnShelf()

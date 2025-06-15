@@ -2,207 +2,88 @@ using UnityEngine;
 
 public class CanvasControl : MonoBehaviour
 {
+    [Header("Ana Ayarlar")]
     [SerializeField] private GameObject canvas;
     [SerializeField] private KeyCode interactKey = KeyCode.E;
-    [SerializeField] private float interactionDistance = 2f;
     [SerializeField] private Transform player;
     [SerializeField] private MarketScreenManager marketScreenManager;
+    [SerializeField] private float interactionDistance = 3f;
 
-    private bool isPlayerNearby = false;
-    private bool isCanvasOpen = false;
+    // YENÝ EKLENEN SATIR
+    [Header("UI Elemanlarý")]
+    [SerializeField] private GameObject crosshairUI; // Crosshair'ýn GameObject'ini buraya atayacaðýz
 
+    public static bool IsUiOpen { get; private set; }
+
+    // ... Start() metodu ayný kalacak ...
     void Start()
     {
-        try
-        {
-            if (canvas == null)
-            {
-                Debug.LogError("CanvasControl: Canvas referansý atanmamýþ!");
-            }
-            else
-            {
-                canvas.SetActive(false);
-                isCanvasOpen = false;
-                Debug.Log("Canvas baþlangýçta kapalý.");
-            }
-
-            if (player == null) Debug.LogError("CanvasControl: Player Transform atanmamýþ!");
-            if (marketScreenManager == null) Debug.LogError("CanvasControl: MarketScreenManager atanmamýþ!");
-
-            LockCursor();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Start sýrasýnda hata: {e.Message}");
-        }
+        if (canvas != null) canvas.SetActive(false);
+        if (crosshairUI != null) crosshairUI.SetActive(true); // Oyun baþýnda crosshair açýk olsun
+        IsUiOpen = false;
+        LockCursor();
     }
 
+
+    // ... Update() metodu ayný kalacak ...
     void Update()
     {
-        try
+        if (!IsUiOpen)
         {
-            if (isPlayerNearby && Input.GetKeyDown(interactKey))
+            if (IsPlayerInDistance() && Input.GetKeyDown(interactKey))
             {
-                Debug.Log($"E tuþuna basýldý, canvas açýlmaya çalýþýlýyor. isPlayerNearby: {isPlayerNearby}");
-                ToggleCanvas();
+                OpenCanvas();
             }
-
-            if (Input.GetKeyDown(KeyCode.Escape) && isCanvasOpen)
+        }
+        else
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
             {
-                Debug.Log("ESC tuþuna basýldý, canvas kapatýlýyor.");
                 CloseCanvas();
             }
         }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Update sýrasýnda hata: {e.Message}");
-        }
     }
 
-    public void ToggleCanvas()
+
+    public void OpenCanvas()
     {
-        try
-        {
-            Debug.Log($"ToggleCanvas çaðrýldý. Mevcut durum: isCanvasOpen={isCanvasOpen}, canvas={(canvas == null ? "null" : canvas.name)}, marketScreenManager={(marketScreenManager == null ? "null" : marketScreenManager.name)}");
-            isCanvasOpen = !isCanvasOpen;
+        IsUiOpen = true;
+        canvas.SetActive(true);
+        if (marketScreenManager != null) marketScreenManager.ShowMainMenu();
 
-            if (canvas == null)
-            {
-                Debug.LogError("Canvas null, açýlamadý!");
-                isCanvasOpen = false;
-                return;
-            }
+        // YENÝ EKLENEN SATIR: Menü açýlýnca crosshair'ý kapat
+        if (crosshairUI != null) crosshairUI.SetActive(false);
 
-            canvas.SetActive(isCanvasOpen);
-            Debug.Log($"Canvas durumu oldu: {isCanvasOpen}");
-
-            if (isCanvasOpen)
-            {
-                if (marketScreenManager != null)
-                {
-                    marketScreenManager.ShowMainMenu();
-                    Debug.Log("MarketScreenManager.ShowMainMenu çaðrýldý.");
-                }
-                else
-                {
-                    Debug.LogWarning("MarketScreenManager null, ShowMainMenu çaðrýlmadý!");
-                }
-                UnlockCursor();
-            }
-            else
-            {
-                if (marketScreenManager != null)
-                {
-                    marketScreenManager.CloseCanvas();
-                    Debug.Log("MarketScreenManager.CloseCanvas çaðrýldý.");
-                }
-                else
-                {
-                    Debug.LogWarning("MarketScreenManager null, CloseCanvas çaðrýlmadý!");
-                }
-                LockCursor();
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"ToggleCanvas sýrasýnda hata: {e.Message}");
-            isCanvasOpen = false;
-        }
+        UnlockCursor();
     }
 
     public void CloseCanvas()
     {
-        try
-        {
-            isCanvasOpen = false;
-            if (canvas != null)
-            {
-                canvas.SetActive(false);
-                Debug.Log("Canvas kapatýldý.");
-            }
-            else
-            {
-                Debug.LogError("Canvas null, kapatýlmadý!");
-            }
+        IsUiOpen = false;
+        if (canvas != null) canvas.SetActive(false);
 
-            if (marketScreenManager != null)
-            {
-                marketScreenManager.CloseCanvas();
-                Debug.Log("MarketScreenManager.CloseCanvas çaðrýldý.");
-            }
-            else
-            {
-                Debug.LogWarning("MarketScreenManager null, CloseCanvas çaðrýlmadý!");
-            }
-            LockCursor();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"CloseCanvas sýrasýnda hata: {e.Message}");
-        }
+        // YENÝ EKLENEN SATIR: Menü kapanýnca crosshair'ý geri aç
+        if (crosshairUI != null) crosshairUI.SetActive(true);
+
+        LockCursor();
     }
 
-    void OnTriggerEnter(Collider other)
+    // ... Script'in geri kalaný ayný kalacak ...
+    private bool IsPlayerInDistance()
     {
-        try
-        {
-            if (other.CompareTag("Player"))
-            {
-                isPlayerNearby = true;
-                Debug.Log($"Player entered trigger. isPlayerNearby: {isPlayerNearby}, Collider: {other.gameObject.name}");
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"OnTriggerEnter sýrasýnda hata: {e.Message}");
-        }
+        if (player == null) return false;
+        return Vector3.Distance(player.position, transform.position) <= interactionDistance;
     }
 
-    void OnTriggerExit(Collider other)
+    void LockCursor()
     {
-        try
-        {
-            if (other.CompareTag("Player"))
-            {
-                isPlayerNearby = false;
-                Debug.Log($"Player exited trigger. isPlayerNearby: {isPlayerNearby}, Collider: {other.gameObject.name}");
-                if (isCanvasOpen)
-                {
-                    CloseCanvas();
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"OnTriggerExit sýrasýnda hata: {e.Message}");
-        }
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
-    public void LockCursor()
+    void UnlockCursor()
     {
-        try
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-            Debug.Log("Fare kilitlendi.");
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"LockCursor sýrasýnda hata: {e.Message}");
-        }
-    }
-
-    public void UnlockCursor()
-    {
-        try
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            Debug.Log("Fare serbest býrakýldý.");
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"UnlockCursor sýrasýnda hata: {e.Message}");
-        }
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 }

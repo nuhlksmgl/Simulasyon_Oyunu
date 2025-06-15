@@ -2,7 +2,7 @@
 
 public class Product : MonoBehaviour
 {
-    public InGameMarket.MarketProduct productDefinition;
+    public MarketProduct productDefinition;
     public bool isHeld = false;
     private Vector3 originalWorldScale;
 

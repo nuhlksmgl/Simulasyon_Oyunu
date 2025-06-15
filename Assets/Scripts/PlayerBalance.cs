@@ -3,46 +3,66 @@ using TMPro;
 
 public class PlayerBalance : MonoBehaviour
 {
-    public int balance = 100;
-    public TextMeshProUGUI balanceText; 
+    public static PlayerBalance Instance { get; private set; }
 
-    void Start()
-    {
-        UpdateBalanceUI(); 
-    }
+    [SerializeField] private float startingBalance = 1000f;
+    [SerializeField] private TextMeshProUGUI balanceText;
 
-    
-    public void AddBalance(int amount)
-    {
-        balance += amount;
-        UpdateBalanceUI();
-    }
+    private float currentBalance;
 
-    
-    public bool DeductBalance(int amount)
+    void Awake()
     {
-        if (balance >= amount) 
+        if (Instance != null && Instance != this)
         {
-            balance -= amount;
-            UpdateBalanceUI();
-            return true; 
+            Destroy(this.gameObject);
         }
         else
         {
-            Debug.Log("Yeterli bakiyeniz yok!"); 
+            Instance = this;
+        }
+    }
+
+    void Start()
+    {
+        currentBalance = startingBalance;
+        UpdateBalanceUI();
+    }
+
+    private void UpdateBalanceUI()
+    {
+        if (balanceText != null)
+        {
+            balanceText.text = $"Bakiyen: {currentBalance:F2}$";
+        }
+    }
+
+    public void AddBalance(float amount)
+    {
+        if (amount > 0)
+        {
+            currentBalance += amount;
+            UpdateBalanceUI();
+        }
+    }
+
+    public bool DeductBalance(float amount)
+    {
+        if (amount > 0 && currentBalance >= amount)
+        {
+            currentBalance -= amount;
+            UpdateBalanceUI();
+            return true;
+        }
+        else
+        {
+            Debug.LogWarning("Yetersiz bakiye!");
             return false;
         }
     }
 
-    
-    void UpdateBalanceUI()
+    // YENÝ EKLENEN METOT
+    public float GetBalance()
     {
-        balanceText.text = $"Bakiyen: {balance} $";
-    }
-
-    
-    public int GetBalance()
-    {
-        return balance;
+        return currentBalance;
     }
 }

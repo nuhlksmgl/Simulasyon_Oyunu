@@ -2,10 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 
+// Eğer DataModels.cs dosyanız bir namespace içindeyse, onu buraya ekleyin.
+// Örnek: using Simulasyon.Data;
+
 public class CargoBox : MonoBehaviour
 {
     [Header("Genel Kutu Ayarları")]
     public bool isLargeBox;
+    [Tooltip("Kutunun içindeki ürünlerin yerleşeceği boş Transform nesneleri.")]
     [SerializeField] private Transform[] productSlots;
     public OrderData assignedOrder;
 
@@ -23,13 +27,61 @@ public class CargoBox : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        if (rb == null) Debug.LogError("Rigidbody component'i eksik!");
-        if (boxAnimator == null) Debug.LogError("Box Animator atanmamış!");
+        if (rb == null) Debug.LogError("Rigidbody component'i eksik!", this.gameObject);
+        if (boxAnimator == null) Debug.LogError("Box Animator atanmamış!", this.gameObject);
         if (productSlots != null && productSlots.Length > 0)
         {
             slotOccupied = new bool[productSlots.Length];
         }
     }
+
+    // =================================================================
+    // =========== YENİ EKLENEN OTOMATİK DOLDURMA METODU ==============
+    // =================================================================
+
+    /// <summary>
+    /// DeliveryManager tarafından çağrılarak kutunun içini otomatik olarak doldurur.
+    /// </summary>
+    public void InitializeBox(List<MarketProduct> itemsToPlace)
+    {
+        // --- KONTROL 5 ---
+        Debug.Log($"5. KUTU İÇİ DOLDURULUYOR: {gameObject.name} kutusuna {itemsToPlace.Count} adet ürün yerleştirme komutu alındı.");
+
+        // Ürünleri yerleştirmeden önce kutu kapaklarını (animasyon için) açık duruma getirelim.
+        SetLidStateForced(true);
+
+        foreach (var productData in itemsToPlace)
+        {
+            if (productData.productPrefab != null)
+            {
+                // 1. Ürünün fiziksel kopyasını oluştur (prefab'dan)
+                GameObject productObj = Instantiate(productData.productPrefab);
+
+                // 2. Oluşturulan kopyanın üzerindeki 'Product' script'ini al
+                Product productScript = productObj.GetComponent<Product>();
+
+                if (productScript != null)
+                {
+                    // 3. Entegrasyonun kilit noktası: Yeni ürüne, hangi market verisine ait olduğunu söylüyoruz.
+                    productScript.productDefinition = productData;
+
+                    // 4. Mevcut 'TryPlaceProduct' metodunu kullanarak ürünü kutuya yerleştir.
+                    bool success = TryPlaceProduct(productScript);
+                    if (!success)
+                    {
+                        Debug.LogError($"{productData.productName} kutuya yerleştirilemedi! Kutu dolu veya ürün boyutu uygun değil.", this.gameObject);
+                        Destroy(productObj); // Yerleştirilemezse objeyi yok et.
+                    }
+                }
+            }
+        }
+        // Tüm ürünler yerleştirildikten sonra kapakları kapat.
+        SetLidStateForced(false);
+    }
+
+    // =================================================================
+    // =========== MEVCUT METOTLARINIZ (DEĞİŞİKLİK YOK) =================
+    // =================================================================
 
     public void ToggleLids()
     {
@@ -43,6 +95,7 @@ public class CargoBox : MonoBehaviour
         if (boxAnimator != null)
         {
             boxAnimator.SetBool("IsOpen", open);
+            // Animasyonun doğrudan son karesine gitmesini sağlar
             if (open) boxAnimator.Play("Open_State", 0, 1f);
             else boxAnimator.Play("Closed_State", 0, 1f);
         }
@@ -55,6 +108,12 @@ public class CargoBox : MonoBehaviour
 
     public bool TryPlaceProduct(Product product)
     {
+        if (product == null || product.productDefinition == null)
+        {
+            Debug.LogError("TryPlaceProduct'a gelen ürün veya productDefinition null!", this.gameObject);
+            return false;
+        }
+
         if (!IsOpen || IsFull() || (!isLargeBox && product.productDefinition.isLarge)) return false;
 
         int slotIndex = -1;
@@ -67,7 +126,7 @@ public class CargoBox : MonoBehaviour
         Transform slot = productSlots[slotIndex];
 
         product.transform.SetParent(slot);
-        product.transform.localPosition = new Vector3(0, 0.01f, 0);
+        product.transform.localPosition = Vector3.zero;
         product.transform.localRotation = Quaternion.identity;
 
         Vector3 originalWorldScale = product.GetOriginalWorldScale();
@@ -102,6 +161,7 @@ public class CargoBox : MonoBehaviour
                 }
             }
             if (slotIndexToFree != -1) slotOccupied[slotIndexToFree] = false;
+
             productToTake.transform.SetParent(null);
             productToTake.transform.localScale = productToTake.GetOriginalWorldScale();
             if (productToTake.TryGetComponent<Rigidbody>(out Rigidbody productRb))
