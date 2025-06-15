@@ -2,13 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 
-//##################################################################
-//##### OYUNCU PAZARI VE ENVANTER ÝÇÝN VERÝ MODELLERÝ
-//##################################################################
-
-/// <summary>
-/// Kargo kutularýnýn özelliklerini tutar.
-/// </summary>
+// Kargo kutularýnýn özelliklerini tutar.
 [System.Serializable]
 public class CargoBoxData
 {
@@ -18,9 +12,7 @@ public class CargoBoxData
     public int smallItemCapacity;
 }
 
-/// <summary>
-/// Alýþveriþ sepetindeki kargo seçeneklerini tutar.
-/// </summary>
+// Alýþveriþ sepetindeki kargo seçeneklerini tutar.
 [System.Serializable]
 public class CargoOption
 {
@@ -29,20 +21,21 @@ public class CargoOption
     public float deliveryTimeMultiplier;
 }
 
-/// <summary>
-/// Pazarda satýlan veya sipariþ edilen tek bir ürünü temsil eder.
-/// </summary>
+// Pazarda satýlan veya sipariþ edilen tek bir ürünü temsil eder.
 [System.Serializable]
 public class MarketProduct
 {
     public string productName;
     public Sprite productImage;
     public int price;
-
-    // DÜZELTME: Diðer script'lerle uyumlu olmasý için 'isLargeItem' -> 'isLarge' olarak deðiþtirildi.
     public bool isLarge;
-
     public GameObject productPrefab;
+
+    [Tooltip("Ýþaretliyse, ürün bir kutu içinde deðil, doðrudan kendisi olarak teslim edilir.")]
+    public bool isDirectDelivery;
+
+    [Tooltip("Ýþaretliyse, ürün satýn alýndýðýnda anýnda etki eder, kargoyla gelmez.")]
+    public bool isInstantPurchase;
 
     [Tooltip("Bu ürün bir kerelik bir satýn alým mý? (Örn: Dükkan Geniþletme)")]
     public bool isOneTimePurchase = false;
@@ -57,12 +50,11 @@ public class MarketProduct
     [HideInInspector] public int priceTrendStreak = 0;
 
     [Header("Oyuncu Verisi")]
-    public int quantity;
+    public int physicalStock;
+    [HideInInspector] public int inTransitStock = 0;
 }
 
-/// <summary>
-/// Ürünleri gruplamak için kullanýlýr. Lisanslar bu seviyede yönetilir.
-/// </summary>
+// Ürünleri gruplamak için kullanýlýr.
 [System.Serializable]
 public class Category
 {
@@ -73,24 +65,13 @@ public class Category
     public List<MarketProduct> productsInCategory;
 }
 
-
-//##################################################################
-//##### MÜÞTERÝ SÝPARÝÞLERÝ ÝÇÝN VERÝ MODELLERÝ
-//##################################################################
-
-/// <summary>
-/// Müþteri sipariþinin durumunu belirtir.
-/// </summary>
+// Müþteri sipariþinin durumunu belirtir.
 public enum OrderStatus { Yeni, Hazirlaniyor, Completed, Failed }
 
-/// <summary>
-/// Müþteri sipariþinin türünü belirtir.
-/// </summary>
+// Müþteri sipariþinin türünü belirtir.
 public enum OrderType { Standart, Express, AyniGun }
 
-/// <summary>
-/// Bir sipariþ içindeki tek bir ürün kaleminin detaylarýný tutar.
-/// </summary>
+// Bir sipariþ içindeki tek bir ürün kaleminin detaylarýný tutar.
 [System.Serializable]
 public class OrderItemDetail
 {
@@ -110,9 +91,7 @@ public class OrderItemDetail
     }
 }
 
-/// <summary>
-/// Tek bir müþteri sipariþinin tüm verilerini içeren ana sýnýf.
-/// </summary>
+// Tek bir müþteri sipariþinin tüm verilerini içeren ana sýnýf.
 [System.Serializable]
 public class OrderData
 {

@@ -96,6 +96,7 @@ GameObject:
   - component: {fileID: 486679413022162280}
   - component: {fileID: 7480882465355361521}
   - component: {fileID: 2244886672233428148}
+  - component: {fileID: 7102243868863522941}
   m_Layer: 11
   m_Name: LittleBigNew
   m_TagString: CargoBox
@@ -171,15 +172,33 @@ MonoBehaviour:
   - {fileID: 2014420087928366664}
   assignedOrder:
     orderID: f9f211b5
-    itemsInOrder: []
     customerName: 
-    orderTimestamp: 0
-    dueTimestamp: 0
-    orderType: 0
+    itemsInOrder: []
     status: 0
-    totalOrderValue: 0
-    timeMultiplierAtOrderCreation: 1
+    orderType: 0
+    timeLimit: 0
   boxAnimator: {fileID: 9057701012812909330}
+--- !u!65 &7102243868863522941
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 975830813476005842}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.1348114, y: 0.79982114, z: 1.1373825}
+  m_Center: {x: 0.005027771, y: -0.10008943, z: -0.0010643005}
 --- !u!1 &988310361957410793
 GameObject:
   m_ObjectHideFlags: 0

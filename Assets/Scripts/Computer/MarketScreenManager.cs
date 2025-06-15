@@ -7,39 +7,54 @@ public class MarketScreenManager : MonoBehaviour
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject buyPanel;
     [SerializeField] private GameObject sellPanel;
+    [SerializeField] private GameObject shoppingCartPanel; // YENİ EKLENDİ
     [SerializeField] private GameObject orderPanel;
     [SerializeField] private GameObject deliveryPanel;
 
-    // Market ilk açıldığında bu metot çağrılır.
+    // Market ilk açıldığında veya Geri butonlarıyla Ana Menü'ye dönüldüğünde çağrılır.
     public void ShowMainMenu()
     {
-        // Ana menüyü göster, diğerlerini gizle
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
-        if (buyPanel != null) buyPanel.SetActive(false);
-        if (sellPanel != null) sellPanel.SetActive(false);
-        if (orderPanel != null) orderPanel.SetActive(false);
-        if (deliveryPanel != null) deliveryPanel.SetActive(false);
+        mainMenuPanel?.SetActive(true);
+        buyPanel?.SetActive(false);
+        sellPanel?.SetActive(false);
+        shoppingCartPanel?.SetActive(false);
+        // Diğer panelleri de burada kapatabilirsiniz (orderPanel, deliveryPanel)
     }
 
     // "Buy" butonuna tıklandığında bu metot çalışacak
     public void OpenBuyPanel()
     {
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-        if (buyPanel != null) buyPanel.SetActive(true);
+        mainMenuPanel?.SetActive(false);
+        buyPanel?.SetActive(true);
     }
 
     // "Sell" butonuna tıklandığında bu metot çalışacak
     public void OpenSellPanel()
     {
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-        if (sellPanel != null) sellPanel.SetActive(true);
+        mainMenuPanel?.SetActive(false);
+        sellPanel?.SetActive(true);
     }
 
-    // YENİ EKLENEN METOT
-    // Bu metot, market arayüzünü tamamen kapatmak için çağrılır.
+    // Sağ üstteki sepet butonuna tıklandığında çağrılacak YENİ METOT
+    public void OpenCartPanel()
+    {
+        // Diğer panelleri kapatıp sepeti açar
+        buyPanel?.SetActive(false);
+        sellPanel?.SetActive(false);
+        mainMenuPanel?.SetActive(false);
+        shoppingCartPanel?.SetActive(true);
+    }
+
+    // Sepetten geri gelmek için kullanılacak YENİ METOT
+    public void BackToBuyPanel()
+    {
+        shoppingCartPanel?.SetActive(false);
+        buyPanel?.SetActive(true);
+    }
+
+    // Market arayüzünü tamamen kapatır
     public void CloseCanvas()
     {
-        // Bu script'in bağlı olduğu ana GameObject'i kapatır.
         this.gameObject.SetActive(false);
     }
 }

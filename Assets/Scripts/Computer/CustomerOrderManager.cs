@@ -6,128 +6,160 @@ using Random = UnityEngine.Random;
 
 public class CustomerOrderManager : MonoBehaviour
 {
+    [Header("Bağlantılar")]
     public InGameMarket inGameMarket;
-    public List<OrderData> activeOrders = new List<OrderData>();
+    public StoreReputation storeReputation;
 
-    [Header("Sipariş Ayarları")]
+    // --- DEĞİŞİKLİK: ZAMANLAMA AYARLARI YENİDEN DÜZENLENDİ ---
+    [Header("Sipariş Sıklık Ayarları")]
+    [Tooltip("Siparişler arasındaki temel bekleme süresi aralığı (saniye).")]
+    public float minInterval = 90f;
+    public float maxInterval = 240f;
+
+    [Header("İtibar Etkileri - Sıklık")]
+    [Tooltip("İtibar SIFIRKEN bekleme süresi ne kadar yavaşlasın? (1.0 = normal, 2.0 = 2 kat yavaş)")]
+    public float slowdownFactorAtMinRep = 2.0f;
+    [Tooltip("İtibar MAKSİMUMKEN bekleme süresi ne kadar hızlansın? (1.0 = normal, 0.2 = 5 kat hızlı)")]
+    public float speedupFactorAtMaxRep = 0.2f; // Bu değeri düşürerek hızı artırabilirsiniz
+
+    [Header("İtibar Etkileri - Kalite")]
+    public float reputationForSuccess = 1.5f;
+    public float reputationForFailure = -3.0f;
+
+    [Header("Sipariş İçerik Ayarları")]
     public int maxActiveOrders = 5;
-    public float minOrderInterval = 120f;
-    public float maxOrderInterval = 300f;
+    [Tooltip("Bir siparişe eklenecek ürün çeşidi için temel şans (0-1). Talep faktörü bunu etkiler.")]
+    [Range(0f, 1f)]
+    public float baseInclusionChance = 0.4f;
+    [Tooltip("Müşterinin, bir ürünü piyasa fiyatının en fazla yüzde kaç fazlasına almayı kabul edeceği.")]
+    [Range(0f, 1f)]
+    public float maxAcceptablePriceMargin = 0.25f;
 
+    public List<OrderData> activeOrders = new List<OrderData>();
     private float orderTimer;
-
     public static event Action OnOrderListChanged;
 
-    private void Start()
+    void Start()
     {
+        if (inGameMarket == null) Debug.LogError("CustomerOrderManager: InGameMarket referansı eksik!");
+        if (storeReputation == null) storeReputation = FindObjectOfType<StoreReputation>();
         ResetOrderTimer();
     }
 
-    private void Update()
+    void Update()
     {
         orderTimer -= Time.deltaTime;
         if (orderTimer <= 0)
         {
             if (activeOrders.Count < maxActiveOrders)
             {
-                GenerateAndDisplayNewOrder();
+                GenerateNewOrder();
             }
             ResetOrderTimer();
         }
-
         CheckForExpiredOrders();
     }
 
+    // GÜNCELLENMİŞ ZAMANLAYICI MANTIĞI
     void ResetOrderTimer()
     {
-        orderTimer = Random.Range(minOrderInterval, maxOrderInterval);
+        float reputationPercent = (storeReputation != null) ? (storeReputation.GetCurrentReputation() / storeReputation.maxReputation) : 0f;
+
+        // Düşük itibardaki yavaşlatma faktöründen, yüksek itibardaki hızlandırma faktörüne doğru bir değer hesapla
+        float timeMultiplier = Mathf.Lerp(slowdownFactorAtMinRep, speedupFactorAtMaxRep, reputationPercent);
+
+        float currentMinInterval = minInterval * timeMultiplier;
+        float currentMaxInterval = maxInterval * timeMultiplier;
+
+        orderTimer = Random.Range(currentMinInterval, currentMaxInterval);
     }
 
-    void GenerateAndDisplayNewOrder()
+    public void GenerateNewOrder()
     {
-        OrderData newOrder = GenerateNewOrder();
-        if (newOrder != null)
-        {
-            activeOrders.Add(newOrder);
-            OnOrderListChanged?.Invoke();
-            Debug.Log($"Yeni sipariş oluşturuldu: {newOrder.orderID}");
-        }
-    }
+        if (inGameMarket == null) return;
 
-    // Güncellenmiş Metot
-    public OrderData GenerateNewOrder()
-    {
-        if (inGameMarket == null)
-        {
-            Debug.LogError("InGameMarket referansı CustomerOrderManager'da atanmamış!");
-            return null;
-        }
+        var sellableProducts = inGameMarket.GetAllUnlockedProducts()
+            .Where(p => p.physicalStock > 0 && p.price > 0).ToList();
+
+        if (sellableProducts.Count == 0) return;
 
         OrderData newOrder = new OrderData();
         newOrder.InitializeCustomer();
 
-        List<MarketProduct> availableProducts = new List<MarketProduct>();
-        foreach (Category category in inGameMarket.productCategories)
+        float reputationPercent = (storeReputation != null) ? (storeReputation.GetCurrentReputation() / storeReputation.maxReputation) : 0.5f;
+        int maxItemTypesInOrder = Mathf.RoundToInt(Mathf.Lerp(1, 4, reputationPercent));
+
+        foreach (var product in sellableProducts)
         {
-            // Sadece kategorinin kilidinin açık olup olmadığını kontrol ediyoruz.
-            if (category.isUnlocked)
+            if (newOrder.itemsInOrder.Count >= maxItemTypesInOrder) break;
+            if (newOrder.itemsInOrder.Any(item => item.productDefinition == product)) continue;
+
+            float marketPrice = product.currentAverageMarketPrice;
+            if (marketPrice <= 0 || product.price > marketPrice * (1 + maxAcceptablePriceMargin)) continue;
+
+            float priceRatio = product.price / marketPrice;
+            float demandFactor = 1.0f;
+
+            if (priceRatio > 1.15f) demandFactor = 0.2f;
+            else if (priceRatio > 1.0f) demandFactor = 0.7f;
+            else if (priceRatio < 0.85f) demandFactor = 2.0f;
+            else if (priceRatio < 1.0f) demandFactor = 1.5f;
+
+            if (Random.value < (baseInclusionChance * demandFactor))
             {
-                // Ürün bazlı lisans kontrolü kaldırıldı.
-                // Kategori açıksa, içindeki tüm ürünler sipariş için uygun sayılır.
-                availableProducts.AddRange(category.productsInCategory);
+                int baseQuantity = Random.Range(1, 4);
+                int finalQuantity = Mathf.Clamp(Mathf.RoundToInt(baseQuantity * demandFactor), 1, product.physicalStock);
+                if (finalQuantity > 0)
+                {
+                    newOrder.itemsInOrder.Add(new OrderItemDetail(product, finalQuantity, product.price, (int)marketPrice));
+                }
             }
         }
 
-        if (availableProducts.Count == 0)
+        if (newOrder.itemsInOrder.Count > 0)
         {
-            Debug.LogWarning("Sipariş oluşturulacak, oyuncunun lisansına sahip olduğu hiçbir kategori bulunamadı.");
-            return null;
+            newOrder.timeLimit = 600f;
+            activeOrders.Add(newOrder);
+            OnOrderListChanged?.Invoke();
         }
-
-        int itemsInOrder = Random.Range(1, 4);
-        for (int i = 0; i < itemsInOrder; i++)
-        {
-            if (availableProducts.Count == 0) break;
-
-            int randomIndex = Random.Range(0, availableProducts.Count);
-            MarketProduct randomProduct = availableProducts[randomIndex];
-            availableProducts.RemoveAt(randomIndex);
-
-            int quantity = Random.Range(1, 5);
-            int marketAverage = (int)randomProduct.currentAverageMarketPrice;
-            newOrder.itemsInOrder.Add(new OrderItemDetail(randomProduct, quantity, randomProduct.price, marketAverage));
-        }
-
-        if (newOrder.itemsInOrder.Count == 0) return null;
-
-        newOrder.timeLimit = 600f;
-
-        return newOrder;
     }
 
     void CheckForExpiredOrders()
     {
-        List<OrderData> expiredOrders = activeOrders
-            .Where(order => (order.status == OrderStatus.Yeni || order.status == OrderStatus.Hazirlaniyor) &&
-                            (DateTime.Now - order.orderTimestamp).TotalSeconds > order.timeLimit)
-            .ToList();
+        var expiredOrders = activeOrders.Where(order =>
+            (order.status == OrderStatus.Yeni || order.status == OrderStatus.Hazirlaniyor) &&
+            (DateTime.Now - order.orderTimestamp).TotalSeconds > order.timeLimit
+        ).ToList();
+        foreach (var order in expiredOrders) { FailOrder(order.orderID); }
+    }
 
-        foreach (OrderData order in expiredOrders)
+    public void CompleteOrder(string orderId)
+    {
+        OrderData order = activeOrders.FirstOrDefault(o => o.orderID == orderId);
+        if (order != null && (order.status == OrderStatus.Yeni || order.status == OrderStatus.Hazirlaniyor))
         {
-            FailOrder(order);
+            order.status = OrderStatus.Completed;
+            foreach (var item in order.itemsInOrder)
+            {
+                if (item.productDefinition.physicalStock >= item.quantity)
+                {
+                    item.productDefinition.physicalStock -= item.quantity;
+                }
+            }
+            storeReputation?.AddReputation(reputationForSuccess);
+            OnOrderListChanged?.Invoke();
         }
     }
 
-    public void CompleteOrder(OrderData order)
+    public void FailOrder(string orderId)
     {
-        order.status = OrderStatus.Completed;
-        OnOrderListChanged?.Invoke();
-    }
-
-    public void FailOrder(OrderData order)
-    {
-        order.status = OrderStatus.Failed;
-        OnOrderListChanged?.Invoke();
+        OrderData order = activeOrders.FirstOrDefault(o => o.orderID == orderId);
+        if (order != null && (order.status == OrderStatus.Yeni || order.status == OrderStatus.Hazirlaniyor))
+        {
+            order.status = OrderStatus.Failed;
+            storeReputation?.AddReputation(reputationForFailure);
+            OnOrderListChanged?.Invoke();
+        }
     }
 
     public List<OrderData> GetPendingOrders()

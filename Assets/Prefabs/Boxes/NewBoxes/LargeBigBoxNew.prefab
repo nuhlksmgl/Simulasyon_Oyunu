@@ -699,6 +699,7 @@ GameObject:
   - component: {fileID: 2039425412880224431}
   - component: {fileID: 1738604536210636828}
   - component: {fileID: 5654788404006083935}
+  - component: {fileID: -781121641665703699}
   m_Layer: 11
   m_Name: LargeBigBoxNew
   m_TagString: CargoBox
@@ -774,15 +775,33 @@ MonoBehaviour:
   - {fileID: 8248196500124387676}
   assignedOrder:
     orderID: 8125b815
-    itemsInOrder: []
     customerName: 
-    orderTimestamp: 0
-    dueTimestamp: 0
-    orderType: 0
+    itemsInOrder: []
     status: 0
-    totalOrderValue: 0
-    timeMultiplierAtOrderCreation: 1
+    orderType: 0
+    timeLimit: 0
   boxAnimator: {fileID: 6944893465882746007}
+--- !u!65 &-781121641665703699
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8056087260082679347}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.937027, y: 1.0805888, z: 1.9255257}
+  m_Center: {x: 0.070503235, y: -0.04029441, z: 0.045713425}
 --- !u!1 &8273407654719115483
 GameObject:
   m_ObjectHideFlags: 0

@@ -31,14 +31,18 @@ public class ShoppingCart : MonoBehaviour
 
     void Start()
     {
-        paymentButton.onClick.AddListener(OnPaymentClicked);
-        cargoDropdown.onValueChanged.AddListener(delegate { OnCargoSelectionChanged(); });
+        if (paymentButton != null) paymentButton.onClick.AddListener(OnPaymentClicked);
+        if (cargoDropdown != null) cargoDropdown.onValueChanged.AddListener(delegate { OnCargoSelectionChanged(); });
+
         PopulateCargoDropdown();
+
         if (shoppingCartPanel != null) shoppingCartPanel.SetActive(false);
     }
 
     void PopulateCargoDropdown()
     {
+        if (cargoDropdown == null || availableCargoOptions == null) return;
+
         cargoDropdown.ClearOptions();
         List<string> options = availableCargoOptions.Select(o => $"{o.displayName} (+{o.price}$)")
                                                     .ToList();
@@ -48,6 +52,8 @@ public class ShoppingCart : MonoBehaviour
 
     void OnCargoSelectionChanged()
     {
+        if (cargoDropdown == null || availableCargoOptions == null || availableCargoOptions.Count == 0) return;
+
         int selectedIndex = cargoDropdown.value;
         if (selectedIndex < availableCargoOptions.Count)
         {
@@ -58,20 +64,31 @@ public class ShoppingCart : MonoBehaviour
 
     public void UpdateCartUI()
     {
-        foreach (Transform child in cartItemsParent) { Destroy(child.gameObject); }
-        foreach (var item in itemsInCart)
+        if (cartItemsParent != null)
         {
-            GameObject itemUI = Instantiate(cartItemPrefab, cartItemsParent);
-            itemUI.GetComponent<CartItemUI>().Setup(item);
+            foreach (Transform child in cartItemsParent) { Destroy(child.gameObject); }
         }
+
+        if (cartItemPrefab != null && cartItemsParent != null)
+        {
+            foreach (var item in itemsInCart)
+            {
+                GameObject itemUI = Instantiate(cartItemPrefab, cartItemsParent);
+                itemUI.GetComponent<CartItemUI>()?.Setup(item);
+            }
+        }
+
         CalculateTotal();
     }
 
     void CalculateTotal()
     {
+        if (totalPriceText == null) return;
+
         float itemsTotal = itemsInCart.Sum(item => item.Product.price * item.Quantity);
         float cargoPrice = (selectedCargo != null) ? selectedCargo.price : 0;
         float finalTotal = itemsTotal + cargoPrice;
+
         totalPriceText.text = $"Toplam: {finalTotal:F2}$";
     }
 
@@ -102,10 +119,39 @@ public class ShoppingCart : MonoBehaviour
         {
             if (audioSource != null && paymentSound != null) audioSource.PlayOneShot(paymentSound);
 
-            // --- KONTROL 1 ---
-            Debug.Log("1. ÖDEME BAÞARILI! DeliveryManager'a yeni teslimat görevi veriliyor...");
+            List<CartItem> itemsForBoxedDelivery = new List<CartItem>();
 
-            DeliveryManager.Instance.ScheduleNewDelivery(itemsInCart, selectedCargo);
+            foreach (var item in itemsInCart)
+            {
+                if (item.Product.baseMarketPrice <= 0)
+                {
+                    item.Product.baseMarketPrice = item.Product.price;
+                    item.Product.currentAverageMarketPrice = item.Product.baseMarketPrice * Random.Range(1.05f, 1.15f);
+                }
+
+                if (!item.Product.isInstantPurchase)
+                {
+                    item.Product.inTransitStock += item.Quantity;
+                }
+
+                if (item.Product.isInstantPurchase)
+                {
+                    for (int i = 0; i < item.Quantity; i++) { InGameMarket.Instance.ApplyInstantPurchase(item.Product); }
+                }
+                else if (item.Product.isDirectDelivery)
+                {
+                    for (int i = 0; i < item.Quantity; i++) { DeliveryManager.Instance.ScheduleDirectDelivery(item.Product, selectedCargo); }
+                }
+                else
+                {
+                    itemsForBoxedDelivery.Add(item);
+                }
+            }
+
+            if (itemsForBoxedDelivery.Count > 0)
+            {
+                DeliveryManager.Instance.ScheduleNewDelivery(itemsForBoxedDelivery, selectedCargo);
+            }
 
             itemsInCart.Clear();
             UpdateCartUI();
@@ -118,6 +164,7 @@ public class ShoppingCart : MonoBehaviour
 
     public void ToggleCartPanel()
     {
+        if (shoppingCartPanel == null) return;
         shoppingCartPanel.SetActive(!shoppingCartPanel.activeSelf);
         if (shoppingCartPanel.activeSelf) UpdateCartUI();
     }

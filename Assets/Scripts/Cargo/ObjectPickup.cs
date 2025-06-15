@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 public class ObjectPickup : MonoBehaviour
 {
@@ -23,8 +25,12 @@ public class ObjectPickup : MonoBehaviour
     [Header("Diğer Ayarlar")]
     [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f);
     [SerializeField] private GameObject crosshair;
-    [SerializeField] private Transform[] shelfSlots;
+    [Tooltip("Oyun başında sahnede zaten var olan slotları buraya atayın.")]
+    [SerializeField] private List<Transform> initialShelfSlots; // DEĞİŞİKLİK: Dizi'den List'e çevrildi
     [SerializeField] private float dropForwardOffset = 1.5f;
+
+    // DEĞİŞİKLİK: Tüm slotları tutacak ana dinamik liste
+    private List<Transform> allAvailableSlots = new List<Transform>();
 
     private GameObject heldObject;
     private GameObject carriedContainer;
@@ -39,7 +45,7 @@ public class ObjectPickup : MonoBehaviour
 
     private Coroutine pickupCoroutine;
     private Coroutine containerPickupCoroutine;
-    private Vector3 originalContainerScale; // Kutunun orijinal boyutunu saklamak için değişken
+    private Vector3 originalContainerScale;
 
     private void Awake()
     {
@@ -49,7 +55,9 @@ public class ObjectPickup : MonoBehaviour
         if (slipHoldPosition == null) Debug.LogError("SlipHoldPosition atanmamış!", this);
         if (containerHoldPosition == null) Debug.LogError("ContainerHoldPosition atanmamış!", this);
         if (crosshair == null) Debug.LogError("Crosshair atanmamış!", this);
-        if (shelfSlots == null || shelfSlots.Length == 0) Debug.LogError("ShelfSlots atanmamış!", this);
+
+        // DEĞİŞİKLİK: Başlangıçta atanan slotları ana listemize ekleyelim.
+        allAvailableSlots.AddRange(initialShelfSlots);
 
         pickupLayer = LayerMask.GetMask("Pickup");
         slipLayer = LayerMask.GetMask("Slip");
@@ -63,6 +71,24 @@ public class ObjectPickup : MonoBehaviour
         HighlightObjectUnderMouse();
         UpdateCrosshairVisibility();
     }
+
+    // YENİ EKLENDİ: Yeni slotları kaydetmek için metotlar
+    #region Slot Management
+    public void RegisterSlots(Transform[] newSlots)
+    {
+        allAvailableSlots.AddRange(newSlots);
+        Debug.Log($"{newSlots.Length} adet yeni raf slotu sisteme eklendi. Toplam kullanılabilir slot: {allAvailableSlots.Count}");
+    }
+
+    public void UnregisterSlots(Transform[] slotsToRemove)
+    {
+        foreach (var slot in slotsToRemove)
+        {
+            allAvailableSlots.Remove(slot);
+        }
+        Debug.Log($"{slotsToRemove.Length} adet raf slotu sistemden kaldırıldı. Kalan slot: {allAvailableSlots.Count}");
+    }
+    #endregion
 
     public bool IsHoldingAnything()
     {
@@ -137,16 +163,13 @@ public class ObjectPickup : MonoBehaviour
     private void DropCarriedContainer()
     {
         if (carriedContainer == null) return;
-
         if (containerPickupCoroutine != null)
         {
             StopCoroutine(containerPickupCoroutine);
             containerPickupCoroutine = null;
         }
-
         carriedContainer.transform.SetParent(null);
         carriedContainer.transform.localScale = originalContainerScale;
-
         if (carriedContainer.TryGetComponent<CargoBox>(out CargoBox box))
         {
             box.OnDropped();
@@ -196,12 +219,10 @@ public class ObjectPickup : MonoBehaviour
         Collider heldObjectCollider = heldObject.GetComponent<Collider>();
         if (heldObjectCollider == null)
         {
-            Debug.LogError($"{heldObject.name} üzerinde Collider yok! Güvenli bırakma başarısız olabilir.");
             return mainCamera.transform.position + mainCamera.transform.forward * dropForwardOffset;
         }
 
         Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-
         heldObjectCollider.enabled = false;
         bool surfaceFound = Physics.Raycast(ray, out RaycastHit hit, pickupDistance * 2f);
         heldObjectCollider.enabled = true;
@@ -336,7 +357,6 @@ public class ObjectPickup : MonoBehaviour
         float elapsedTime = 0f;
         Vector3 startPosition = objectToMove.position;
         Quaternion startRotation = objectToMove.rotation;
-
         while (elapsedTime < pickupDuration)
         {
             elapsedTime += Time.deltaTime;
@@ -347,43 +367,58 @@ public class ObjectPickup : MonoBehaviour
             objectToMove.rotation = Quaternion.Slerp(startRotation, targetHoldPosition.rotation, progress);
             yield return null;
         }
-
         objectToMove.SetParent(targetHoldPosition);
         objectToMove.position = targetHoldPosition.position;
         objectToMove.rotation = targetHoldPosition.rotation;
-
         objectToMove.localPosition = Vector3.zero;
         objectToMove.localRotation = Quaternion.identity;
-
         containerPickupCoroutine = null;
     }
 
+    // GÜNCELLENMİŞ METOT
     private void TryPlaceObjectOnShelf()
     {
         if (heldObject == null) return;
         Product productToPlace = heldObject.GetComponent<Product>();
         if (productToPlace == null) { DropObject(); return; }
-        foreach (Transform slot in shelfSlots)
+
+        Transform bestSlot = null;
+        float closestDistance = float.MaxValue;
+
+        var emptySlots = allAvailableSlots.Where(s => s.childCount == 0).ToList();
+
+        foreach (Transform slot in emptySlots)
         {
-            if (slot.childCount == 0)
+            float distance = Vector3.Distance(mainCamera.transform.position, slot.position);
+            if (distance < closestDistance)
             {
-                heldObject.transform.SetParent(slot);
-                heldObject.transform.localPosition = Vector3.zero;
-                heldObject.transform.localRotation = Quaternion.identity;
-                Vector3 parentWorldScale = slot.lossyScale;
-                Vector3 originalWorldScale = productToPlace.GetOriginalWorldScale();
-                heldObject.transform.localScale = new Vector3(
-                    originalWorldScale.x / (parentWorldScale.x == 0 ? 1 : parentWorldScale.x),
-                    originalWorldScale.y / (parentWorldScale.y == 0 ? 1 : parentWorldScale.y),
-                    originalWorldScale.z / (parentWorldScale.z == 0 ? 1 : parentWorldScale.z)
-                );
-                if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
-                productToPlace.isHeld = false;
-                heldObject = null;
-                return;
+                closestDistance = distance;
+                bestSlot = slot;
             }
         }
-        DropObject();
+
+        if (bestSlot != null && closestDistance <= shelfPlaceDistance)
+        {
+            heldObject.transform.SetParent(bestSlot);
+            heldObject.transform.localPosition = Vector3.zero;
+            heldObject.transform.localRotation = Quaternion.identity;
+
+            Vector3 parentWorldScale = bestSlot.lossyScale;
+            Vector3 originalWorldScale = productToPlace.GetOriginalWorldScale();
+            heldObject.transform.localScale = new Vector3(
+                originalWorldScale.x / (parentWorldScale.x == 0 ? 1 : parentWorldScale.x),
+                originalWorldScale.y / (parentWorldScale.y == 0 ? 1 : parentWorldScale.y),
+                originalWorldScale.z / (parentWorldScale.z == 0 ? 1 : parentWorldScale.z)
+            );
+
+            if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
+            productToPlace.isHeld = false;
+            heldObject = null;
+        }
+        else
+        {
+            DropObject();
+        }
     }
 
     private void TryPlaceObjectInCargoBox(CargoBox cargoBox)
@@ -422,6 +457,7 @@ public class ObjectPickup : MonoBehaviour
     }
 
     public GameObject GetHeldObject() => heldObject;
+
     public void ClearHeldObject()
     {
         if (heldObject != null) Destroy(heldObject);

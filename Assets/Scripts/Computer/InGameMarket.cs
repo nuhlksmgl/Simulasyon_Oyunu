@@ -6,6 +6,8 @@ using System.Linq;
 
 public class InGameMarket : MonoBehaviour
 {
+    public static InGameMarket Instance { get; private set; }
+
     [Header("Veri Listeleri")]
     public List<Category> productCategories;
 
@@ -35,6 +37,9 @@ public class InGameMarket : MonoBehaviour
 
     void Awake()
     {
+        if (Instance != null && Instance != this) { Destroy(this.gameObject); }
+        else { Instance = this; }
+
         FindSpecialProducts();
     }
 
@@ -113,9 +118,15 @@ public class InGameMarket : MonoBehaviour
         }
     }
 
-    public void AddToPurchaseBasket(MarketProduct productData, Category category, int quantity)
+    public void ApplyInstantPurchase(MarketProduct product)
     {
-        ShoppingCart.Instance.AddItem(productData, quantity);
+        if (product.productName == "Dükkan Genişletme")
+        {
+            Debug.Log("Dükkan Genişletme anında uygulandı! Duvarlar kaldırılıyor.");
+            if (duvar1 != null) duvar1.SetActive(false);
+            if (duvar2 != null) duvar2.SetActive(false);
+            product.isPurchased = true;
+        }
     }
 
     public bool CanPurchaseShelf()
@@ -127,6 +138,7 @@ public class InGameMarket : MonoBehaviour
             return shelfProduct.purchaseCount < 7;
     }
 
+    // EKSİK OLAN VE HATAYA NEDEN OLAN METOT
     public List<MarketProduct> GetAllUnlockedProducts()
     {
         List<MarketProduct> allProducts = new List<MarketProduct>();

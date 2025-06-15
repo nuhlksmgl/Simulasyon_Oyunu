@@ -9,23 +9,19 @@ public class ProductCardUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI productNameText;
     [SerializeField] private TextMeshProUGUI priceText;
 
-    // YENİ EKLENEN UI REFERANSLARI
     [Header("Miktar Kontrolü")]
     [SerializeField] private Button plusButton;
     [SerializeField] private Button minusButton;
     [SerializeField] private TextMeshProUGUI quantityText;
-    [SerializeField] private Button addToCartButton; // Eski buyButton
+    [SerializeField] private Button addToCartButton;
 
     private MarketProduct currentProduct;
     private Category parentCategory;
-    private InGameMarket marketController;
-
-    // YENİ EKLENEN DEĞİŞKEN
+    private InGameMarket marketController; // 'CanPurchaseShelf' gibi kontroller için hala gerekli
     private int currentQuantity = 1;
 
     void Awake()
     {
-        // Butonların listener'larını bir kereye mahsus burada atıyoruz.
         plusButton.onClick.AddListener(IncreaseQuantity);
         minusButton.onClick.AddListener(DecreaseQuantity);
         addToCartButton.onClick.AddListener(OnAddToCartClicked);
@@ -37,16 +33,13 @@ public class ProductCardUI : MonoBehaviour
         this.parentCategory = category;
         this.marketController = market;
 
-        // Kart bilgilerini doldur
         if (productImage != null) productImage.sprite = product.productImage;
         if (productNameText != null) productNameText.text = product.productName;
         if (priceText != null) priceText.text = $"{product.price}₺";
 
-        // Miktarı sıfırla ve metni güncelle
         currentQuantity = 1;
         UpdateQuantityText();
 
-        // Butonların durumunu ayarla (eski kodumuz)
         addToCartButton.interactable = true;
         addToCartButton.GetComponentInChildren<TextMeshProUGUI>().text = "Sepete Ekle";
 
@@ -87,10 +80,14 @@ public class ProductCardUI : MonoBehaviour
 
     private void OnAddToCartClicked()
     {
-        if (currentProduct != null && marketController != null && parentCategory != null)
+        if (currentProduct != null && parentCategory != null)
         {
-            // Sepete eklerken artık miktarı da gönderiyoruz
-            marketController.AddToPurchaseBasket(currentProduct, parentCategory, currentQuantity);
+            // DÜZELTME: Doğrudan ShoppingCart script'ini çağırıyoruz.
+            ShoppingCart.Instance.AddItem(currentProduct, currentQuantity);
+        }
+        else
+        {
+            Debug.LogError("Ürün veya kategori bilgisi eksik, sepete eklenemedi!");
         }
     }
 }

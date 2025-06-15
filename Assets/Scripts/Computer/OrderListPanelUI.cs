@@ -1,5 +1,4 @@
-﻿// OrderListPanelUI.cs
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Text;
@@ -7,86 +6,86 @@ using System.Collections.Generic;
 
 public class OrderListPanelUI : MonoBehaviour
 {
-    [Header("Bağlantılar")]
-    [SerializeField] private CustomerOrderManager orderManager;
-    [SerializeField] private GameObject siparisSatiriPrefab;
-    [SerializeField] private Transform scrollviewContentParent;
-    [SerializeField] private PackingStation packingStation; // Bu script'in de projede olması gerekir
+    // --- DEĞİŞİKLİK: DEĞİŞKEN İSİMLERİ VE GRUPLANDIRMA GÜNCELLENDİ ---
+
+    [Header("Yöneticiler ve Kontrolcüler")]
+    [SerializeField] private CustomerOrderManager customerOrderManager;
     [SerializeField] private MarketScreenManager marketScreenManager;
+    [SerializeField] private ActiveOrderManager activeOrderManager;
+
+    [Header("Arayüz Prefabları")]
+    [SerializeField] private GameObject orderRowPrefab;       // siparisSatiriPrefab -> orderRowPrefab
+    [SerializeField] private GameObject orderItemIconPrefab;
     [SerializeField] private GameObject slipPrefab;
-    [SerializeField] private Transform printerPosition;
+
+    [Header("Sahne Referansları")]
+    [SerializeField] private Transform orderListContent;     // scrollviewContentParent -> orderListContent
+    [SerializeField] private Transform slipSpawnPoint;       // printerPosition -> slipSpawnPoint
 
     void Awake()
     {
-        // Referansları bulma
-        if (orderManager == null) orderManager = FindObjectOfType<CustomerOrderManager>();
-        if (packingStation == null) packingStation = FindObjectOfType<PackingStation>();
+        // Referansları bulma (eğer Inspector'dan atanmamışsa)
+        if (customerOrderManager == null) customerOrderManager = FindObjectOfType<CustomerOrderManager>();
         if (marketScreenManager == null) marketScreenManager = FindObjectOfType<MarketScreenManager>();
+        if (activeOrderManager == null) activeOrderManager = FindObjectOfType<ActiveOrderManager>();
+
         // Hata kontrolleri
-        if (orderManager == null) Debug.LogError("CustomerOrderManager referansı bulunamadı!");
-        if (packingStation == null) Debug.LogWarning("PackingStation referansı bulunamadı!");
+        if (customerOrderManager == null) Debug.LogError("CustomerOrderManager referansı bulunamadı!");
         if (marketScreenManager == null) Debug.LogError("MarketScreenManager referansı bulunamadı!");
-        if (slipPrefab == null) Debug.LogError("Slip Prefab atanmamış!");
-        if (printerPosition == null) Debug.LogError("Printer Position atanmamış!");
+        if (activeOrderManager == null) Debug.LogError("ActiveOrderManager referansı bulunamadı!");
     }
 
     void OnEnable()
     {
-        CustomerOrderManager.OnOrderListChanged += HandleOrderListChanged;
-        Debug.Log("OrderListPanelUI OnEnable: OnOrderListChanged event'ine abone olundu.");
+        CustomerOrderManager.OnOrderListChanged += RefreshOrderList;
         RefreshOrderList();
     }
 
     void OnDisable()
     {
         CustomerOrderManager.OnOrderListChanged -= HandleOrderListChanged;
-        Debug.Log("OrderListPanelUI OnDisable: OnOrderListChanged event aboneliği kaldırıldı.");
     }
 
     private void HandleOrderListChanged()
     {
-        Debug.Log("HandleOrderListChanged çağrıldı. Liste yenileniyor.");
         RefreshOrderList();
     }
 
     public void RefreshOrderList()
     {
-        if (orderManager == null || siparisSatiriPrefab == null || scrollviewContentParent == null) return;
+        if (customerOrderManager == null || orderRowPrefab == null || orderListContent == null) return;
 
-        foreach (Transform child in scrollviewContentParent)
+        foreach (Transform child in orderListContent)
         {
             Destroy(child.gameObject);
         }
 
-        List<OrderData> orders = orderManager.GetPendingOrders();
+        List<OrderData> orders = customerOrderManager.GetPendingOrders();
         if (orders == null) return;
 
         foreach (OrderData order in orders)
         {
-            GameObject satirInstance = Instantiate(siparisSatiriPrefab, scrollviewContentParent);
+            GameObject satirInstance = Instantiate(orderRowPrefab, orderListContent);
 
-            TextMeshProUGUI siparisNoText = satirInstance.transform.Find("SiparisNo")?.GetComponent<TextMeshProUGUI>();
-            TextMeshProUGUI urunAdlariText = satirInstance.transform.Find("UrunAdlari")?.GetComponent<TextMeshProUGUI>();
-            TextMeshProUGUI siparisDurumuText = satirInstance.transform.Find("SiparisDurumu")?.GetComponent<TextMeshProUGUI>();
-            TextMeshProUGUI toplamTutarText = satirInstance.transform.Find("ToplamTutar")?.GetComponent<TextMeshProUGUI>();
-            Button hazirlaButton = satirInstance.transform.Find("HazirlaButton")?.GetComponent<Button>();
+            var siparisNoText = satirInstance.transform.Find("SiparisNoText")?.GetComponent<TextMeshProUGUI>();
+            var kargoTuruText = satirInstance.transform.Find("KargoTuruText")?.GetComponent<TextMeshProUGUI>();
+            var toplamTutarText = satirInstance.transform.Find("ToplamTutarText")?.GetComponent<TextMeshProUGUI>();
+            var urunlerLayout = satirInstance.transform.Find("UrunlerLayout");
+            var hazirlaButton = satirInstance.transform.Find("HazirlaButton")?.GetComponent<Button>();
 
             if (siparisNoText != null) siparisNoText.text = $"Sip. No: {order.orderID}";
+            if (kargoTuruText != null) kargoTuruText.text = $"Kargo Türü: {order.orderType}";
+            if (toplamTutarText != null) toplamTutarText.text = $"Toplam Tutar: {order.totalOrderValue:F2}₺";
 
-            if (urunAdlariText != null)
+            if (urunlerLayout != null && orderItemIconPrefab != null)
             {
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < order.itemsInOrder.Count; i++)
+                foreach (var item in order.itemsInOrder)
                 {
-                    var item = order.itemsInOrder[i];
-                    builder.Append($"{item.quantity} x {item.productDefinition?.productName ?? "[Silinmiş Ürün]"}");
-                    if (i < order.itemsInOrder.Count - 1) builder.Append("\n");
+                    GameObject iconInstance = Instantiate(orderItemIconPrefab, urunlerLayout);
+                    var iconScript = iconInstance.GetComponent<OrderItemIconUI>();
+                    if (iconScript != null) iconScript.Setup(item);
                 }
-                urunAdlariText.text = builder.ToString();
             }
-
-            if (siparisDurumuText != null) siparisDurumuText.text = $"Durum: {order.status}";
-            if (toplamTutarText != null) toplamTutarText.text = $"Tutar: {order.totalOrderValue:F2}₺";
 
             if (hazirlaButton != null)
             {
@@ -100,27 +99,22 @@ public class OrderListPanelUI : MonoBehaviour
     private void OnHazirlaButtonClicked(OrderData order)
     {
         if (order == null) return;
-        Debug.Log($"Hazırla butonuna tıklandı: Sipariş ID {order.orderID}");
 
-        // ActiveOrderManager gibi bir singleton varsa kullanılabilir.
-        // ActiveOrderManager.Instance.SetActiveOrder(order);
-
-        orderManager.UpdateOrderStatus(order.orderID, OrderStatus.Hazirlaniyor);
-
-        if (packingStation != null) packingStation.SpawnCargoBoxForOrder(order);
-        else Debug.LogWarning("Packing station bulunamadığı için kargo kutusu oluşturulamadı.");
-
+        activeOrderManager.SetActiveOrder(order);
+        customerOrderManager.UpdateOrderStatus(order.orderID, OrderStatus.Hazirlaniyor);
         PrintSlipForOrder(order);
         marketScreenManager.CloseCanvas();
     }
 
     private void PrintSlipForOrder(OrderData order)
     {
-        if (order == null || slipPrefab == null || printerPosition == null) return;
+        if (slipPrefab == null || slipSpawnPoint == null) return;
 
-        GameObject slipInstance = Instantiate(slipPrefab, printerPosition.position, printerPosition.rotation);
-        // Slip script'inin SetOrderData gibi bir metodu olduğunu varsayıyoruz.
-        // slipInstance.GetComponent<Slip>()?.SetOrderData(order); 
-        Debug.Log($"Slip oluşturuldu: Sipariş ID {order.orderID}");
+        GameObject slipInstance = Instantiate(slipPrefab, slipSpawnPoint.position, slipSpawnPoint.rotation);
+        Slip slipScript = slipInstance.GetComponent<Slip>();
+        if (slipScript != null)
+        {
+            slipScript.SetOrderData(order);
+        }
     }
 }

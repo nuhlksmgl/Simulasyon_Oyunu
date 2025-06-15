@@ -12,14 +12,8 @@ public class PlayerBalance : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(this.gameObject);
-        }
-        else
-        {
-            Instance = this;
-        }
+        if (Instance != null && Instance != this) { Destroy(this.gameObject); }
+        else { Instance = this; }
     }
 
     void Start()
@@ -30,10 +24,7 @@ public class PlayerBalance : MonoBehaviour
 
     private void UpdateBalanceUI()
     {
-        if (balanceText != null)
-        {
-            balanceText.text = $"Bakiyen: {currentBalance:F2}$";
-        }
+        if (balanceText != null) { balanceText.text = $"Bakiyen: {currentBalance:F2}$"; }
     }
 
     public void AddBalance(float amount)
@@ -45,9 +36,10 @@ public class PlayerBalance : MonoBehaviour
         }
     }
 
+    // Lisans hatasýný çözen hali
     public bool DeductBalance(float amount)
     {
-        if (amount > 0 && currentBalance >= amount)
+        if (amount >= 0 && currentBalance >= amount)
         {
             currentBalance -= amount;
             UpdateBalanceUI();
@@ -55,12 +47,11 @@ public class PlayerBalance : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Yetersiz bakiye!");
+            Debug.LogWarning("Yetersiz bakiye veya geçersiz tutar!");
             return false;
         }
     }
 
-    // YENÝ EKLENEN METOT
     public float GetBalance()
     {
         return currentBalance;
