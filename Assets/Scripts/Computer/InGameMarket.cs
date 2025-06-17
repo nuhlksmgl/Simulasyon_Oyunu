@@ -50,6 +50,7 @@ public class InGameMarket : MonoBehaviour
 
     void FindSpecialProducts()
     {
+        if (productCategories == null) return;
         foreach (var category in productCategories)
         {
             if (category.productsInCategory == null) continue;
@@ -64,46 +65,41 @@ public class InGameMarket : MonoBehaviour
 
     public void InitializeMarket()
     {
-        if (productCategories.Count > 0 && productCategories[0] != null)
+        if (productCategories != null && productCategories.Count > 0 && productCategories[0] != null)
         {
             productCategories[0].isUnlocked = true;
         }
-        foreach (Transform child in categoryListParent) { Destroy(child.gameObject); }
-        foreach (var category in productCategories)
+
+        if (categoryListParent != null)
         {
-            GameObject buttonObj = Instantiate(categoryButtonPrefab, categoryListParent);
-            buttonObj.GetComponentInChildren<TextMeshProUGUI>().text = category.categoryName;
-            buttonObj.GetComponent<Button>().onClick.AddListener(() => OnCategoryButtonClicked(category));
+            foreach (Transform child in categoryListParent) { Destroy(child.gameObject); }
         }
-        Category defaultCategory = productCategories.FirstOrDefault(c => c.isUnlocked);
-        if (defaultCategory != null)
+
+        if (productCategories != null && categoryButtonPrefab != null)
         {
-            OnCategoryButtonClicked(defaultCategory);
+            foreach (var category in productCategories)
+            {
+                GameObject buttonObj = Instantiate(categoryButtonPrefab, categoryListParent);
+                buttonObj.GetComponentInChildren<TextMeshProUGUI>().text = category.categoryName;
+                buttonObj.GetComponent<Button>().onClick.AddListener(() => OnCategoryButtonClicked(category));
+            }
         }
-        else
-        {
-            Debug.LogWarning("Başlangıçta kilidi açık hiçbir kategori bulunamadı!");
-        }
+
+        Category defaultCategory = productCategories?.FirstOrDefault(c => c.isUnlocked);
+        if (defaultCategory != null) OnCategoryButtonClicked(defaultCategory);
     }
 
     public void OnCategoryButtonClicked(Category selectedCategory)
     {
-        Debug.Log($"--- OnCategoryButtonClicked METODU ÇAĞRILDI: Kategori = {selectedCategory.categoryName} ---");
-
         currentSelectedCategory = selectedCategory;
-
-        Debug.Log($"Kategorinin kilit durumu (isUnlocked): {selectedCategory.isUnlocked}");
-
         if (selectedCategory.isUnlocked)
         {
-            Debug.Log("IF bloğuna girildi. Ürünler listelenecek...");
             productGridPanel.SetActive(true);
             licensePurchasePanel.SetActive(false);
             PopulateProductGrid(selectedCategory);
         }
         else
         {
-            Debug.Log("ELSE bloğuna girildi. Lisans satın alma paneli gösterilecek.");
             productGridPanel.SetActive(false);
             licensePurchasePanel.SetActive(true);
             licenseCategoryNameText.text = $"{selectedCategory.categoryName} Lisansı";
@@ -115,14 +111,14 @@ public class InGameMarket : MonoBehaviour
 
     void PopulateProductGrid(Category category)
     {
-        // Hatanın düzeltildiği satır burası
-        Debug.Log($"PopulateProductGrid içindeyim: '{category.categoryName}' kategorisindeki {category.productsInCategory.Count} ürün işlenecek.");
-        foreach (Transform child in productGridParent)
-        {
-            Destroy(child.gameObject);
-        }
+        if (productGridParent == null || productCardPrefab == null) return;
+
+        foreach (Transform child in productGridParent) { Destroy(child.gameObject); }
 
         if (category == null || category.productsInCategory == null) return;
+
+        // KONTROL MESAJI: Bu log, döngüye kaç ürün girdiğini size söyleyecektir.
+        Debug.Log($"'{category.categoryName}' kategorisi için {category.productsInCategory.Count} adet kart oluşturuluyor.");
 
         foreach (var product in category.productsInCategory)
         {
@@ -130,8 +126,12 @@ public class InGameMarket : MonoBehaviour
             cardInstance.GetComponent<ProductCardUI>().Setup(product, category, this);
         }
 
+        // Layout'u yeniden hesaplamaya zorla (üst üste binmeyi engeller)
         Canvas.ForceUpdateCanvases();
-        LayoutRebuilder.ForceRebuildLayoutImmediate(productGridParent as RectTransform);
+        if (productGridParent is RectTransform)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(productGridParent as RectTransform);
+        }
     }
 
     public void BuyCategoryLicense(Category categoryToUnlock)
@@ -165,6 +165,7 @@ public class InGameMarket : MonoBehaviour
     public List<MarketProduct> GetAllUnlockedProducts()
     {
         var allProducts = new List<MarketProduct>();
+        if (productCategories == null) return allProducts;
         foreach (Category category in productCategories)
         {
             if (category.isUnlocked)

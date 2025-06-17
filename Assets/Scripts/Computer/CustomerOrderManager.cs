@@ -13,13 +13,13 @@ public class CustomerOrderManager : MonoBehaviour
     public StoreReputation storeReputation;
 
     [Header("Sipariş Sıklık Ayarları")]
-    public float baseMinOrderInterval = 120f;
-    public float baseMaxOrderInterval = 300f;
+    public float baseMinOrderInterval = 90f;
+    public float baseMaxOrderInterval = 240f;
 
     [Header("İtibar Etkileri - Sıklık")]
-    [Tooltip("İtibar SIFIRKEN bekleme süresi ne kadar yavaşlasın? (1.0 = normal, 2.0 = 2 kat yavaş)")]
+    [Tooltip("İtibar SIFIRKEN bekleme süresi ne kadar yavaşlasın? (2.0 = 2 kat yavaş)")]
     public float slowdownFactorAtMinRep = 2.0f;
-    [Tooltip("İtibar MAKSİMUMKEN bekleme süresi ne kadar hızlansın? (1.0 = normal, 0.2 = 5 kat hızlı)")]
+    [Tooltip("İtibar MAKSİMUMKEN bekleme süresi ne kadar hızlansın? (0.2 = 5 kat hızlı)")]
     public float speedupFactorAtMaxRep = 0.2f;
 
     [Header("Sipariş İçerik Ayarları")]
@@ -75,12 +75,12 @@ public class CustomerOrderManager : MonoBehaviour
         orderTimer = Random.Range(currentMinInterval, currentMaxInterval);
     }
 
-    public void GenerateNewOrder()
+    void GenerateNewOrder()
     {
         if (inGameMarket == null) return;
 
         var sellableProducts = inGameMarket.GetAllUnlockedProducts()
-            .Where(p => p.physicalStock > 0 && p.price > 0).ToList();
+            .Where(p => p.physicalStock > 0 && p.price > 0 && p.isListedForSale).ToList();
 
         if (sellableProducts.Count == 0) return;
 
@@ -125,7 +125,6 @@ public class CustomerOrderManager : MonoBehaviour
             newOrder.timeLimit = 600f;
             activeOrders.Add(newOrder);
             OnOrderListChanged?.Invoke();
-            Debug.Log($"YENİ MÜŞTERİ SİPARİŞİ OLUŞTURULDU: ID {newOrder.orderID}, Çeşit: {newOrder.itemsInOrder.Count}");
         }
     }
 
@@ -152,8 +151,6 @@ public class CustomerOrderManager : MonoBehaviour
                     item.productDefinition.physicalStock -= item.quantity;
                 }
             }
-            // İtibar puanı ekleme işini artık ShippingZone yapıyor.
-            // storeReputation?.AddReputation(reputationForSuccess);
             OnOrderListChanged?.Invoke();
         }
     }

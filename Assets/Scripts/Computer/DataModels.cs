@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 
-// Kargo kutularýnýn özelliklerini tutar.
 [System.Serializable]
 public class CargoBoxData
 {
@@ -12,7 +11,6 @@ public class CargoBoxData
     public int smallItemCapacity;
 }
 
-// Alýþveriþ sepetindeki kargo seçeneklerini tutar.
 [System.Serializable]
 public class CargoOption
 {
@@ -21,7 +19,6 @@ public class CargoOption
     public float deliveryTimeMultiplier;
 }
 
-// Pazarda satýlan veya sipariþ edilen tek bir ürünü temsil eder.
 [System.Serializable]
 public class MarketProduct
 {
@@ -30,18 +27,10 @@ public class MarketProduct
     public int price;
     public bool isLarge;
     public GameObject productPrefab;
-
-    [Tooltip("Ýþaretliyse, ürün bir kutu içinde deðil, doðrudan kendisi olarak teslim edilir.")]
     public bool isDirectDelivery;
-
-    [Tooltip("Ýþaretliyse, ürün satýn alýndýðýnda anýnda etki eder, kargoyla gelmez.")]
     public bool isInstantPurchase;
-
-    [Tooltip("Bu ürün bir kerelik bir satýn alým mý? (Örn: Dükkan Geniþletme)")]
     public bool isOneTimePurchase = false;
     [HideInInspector] public bool isPurchased = false;
-
-    [Tooltip("Bu üründen kaç adet satýn alýndýðýný sayar.")]
     [HideInInspector] public int purchaseCount = 0;
 
     [Header("Piyasa Dinamikleri")]
@@ -52,9 +41,11 @@ public class MarketProduct
     [Header("Oyuncu Verisi")]
     public int physicalStock;
     [HideInInspector] public int inTransitStock = 0;
+
+    // YENÝ EKLENDÝ: Oyuncunun bu ürünü SellPanel'de satýþa koyup koymadýðýný belirtir.
+    [HideInInspector] public bool isListedForSale = false;
 }
 
-// Ürünleri gruplamak için kullanýlýr.
 [System.Serializable]
 public class Category
 {
@@ -65,13 +56,9 @@ public class Category
     public List<MarketProduct> productsInCategory;
 }
 
-// Müþteri sipariþinin durumunu belirtir.
-public enum OrderStatus { Yeni, Hazirlaniyor, Completed, Failed }
-
-// Müþteri sipariþinin türünü belirtir.
+public enum OrderStatus { Yeni, Hazirlaniyor, Completed, Failed, Paketlendi, Kargoda, TeslimEdildi, IptalEdildi }
 public enum OrderType { Standart, Express, AyniGun }
 
-// Bir sipariþ içindeki tek bir ürün kaleminin detaylarýný tutar.
 [System.Serializable]
 public class OrderItemDetail
 {
@@ -91,7 +78,6 @@ public class OrderItemDetail
     }
 }
 
-// Tek bir müþteri sipariþinin tüm verilerini içeren ana sýnýf.
 [System.Serializable]
 public class OrderData
 {
@@ -109,12 +95,8 @@ public class OrderData
         {
             float total = 0;
             if (itemsInOrder != null)
-            {
                 foreach (var item in itemsInOrder)
-                {
                     total += item.pricePerItem * item.quantity;
-                }
-            }
             return total;
         }
     }

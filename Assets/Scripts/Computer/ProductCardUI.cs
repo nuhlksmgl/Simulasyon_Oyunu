@@ -51,7 +51,7 @@ public class ProductCardUI : MonoBehaviour
 
         // Butonların durumunu ayarla
         addToCartButton.interactable = true;
-        addToCartButton.GetComponentInChildren<TextMeshProUGUI>().text = "Sepete Ekle";
+        addToCartButton.GetComponentInChildren<TextMeshProUGUI>().text = "";
 
         if (product.isOneTimePurchase && product.isPurchased)
         {

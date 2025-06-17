@@ -6,21 +6,15 @@ public class DeliveryManager : MonoBehaviour
 {
     public static DeliveryManager Instance { get; private set; }
 
-    [Header("Kutulu Teslimat Ayarlarý")]
-    [Tooltip("Kargo kutularýnýn spawn olacaðý genel alan.")]
+    [Header("Teslimat Ayarlarý")]
     [SerializeField] private BoxCollider deliveryArea;
     [SerializeField] private List<CargoBoxData> boxTypes;
-
-    [Header("Raf Teslimat Ayarlarý")]
-    [Tooltip("Sadece raflarýn spawn olacaðý belirli noktalarý buraya atayýn.")]
     [SerializeField] private Transform[] shelfSpawnPoints;
     private int nextShelfSpawnIndex = 0;
 
     [Header("Genel Spawn Ayarlarý")]
-    [SerializeField] private float minDistanceBetweenObjects = 1f;
     [SerializeField] private int maxSpawnAttempts = 20;
 
-    // Ýç veri yapýlarý
     private class ActiveDelivery { public float DeliveryTimestamp; public List<PackedBox> PackedBoxes; }
     private class PackedBox { public GameObject BoxPrefab; public List<MarketProduct> ItemsInBox; }
     private List<ActiveDelivery> activeDeliveries = new List<ActiveDelivery>();
@@ -28,10 +22,7 @@ public class DeliveryManager : MonoBehaviour
     private class ActiveDirectDelivery { public float DeliveryTimestamp; public GameObject ProductPrefab; }
     private List<ActiveDirectDelivery> activeDirectDeliveries = new List<ActiveDirectDelivery>();
 
-    void Awake()
-    {
-        Instance = this;
-    }
+    void Awake() { Instance = this; }
 
     void Update()
     {
@@ -121,22 +112,32 @@ public class DeliveryManager : MonoBehaviour
 
     void SpawnBoxes(List<PackedBox> packedBoxes)
     {
-        foreach (var packedBox in packedBoxes)
+        if (deliveryArea == null) { Debug.LogError("DeliveryManager: Teslimat Alaný atanmamýþ!"); return; }
+
+        try
         {
-            GameObject boxInstance = SpawnObjectInArea(packedBox.BoxPrefab);
-            if (boxInstance != null)
+            deliveryArea.enabled = false;
+            foreach (var packedBox in packedBoxes)
             {
-                var cargoBoxScript = boxInstance.GetComponent<CargoBox>();
-                if (cargoBoxScript != null)
+                GameObject boxInstance = SpawnSingleObjectInArea(packedBox.BoxPrefab);
+                if (boxInstance != null)
                 {
-                    cargoBoxScript.InitializeBox(packedBox.ItemsInBox);
-                    foreach (var product in packedBox.ItemsInBox)
+                    var cargoBoxScript = boxInstance.GetComponent<CargoBox>();
+                    if (cargoBoxScript != null)
                     {
-                        if (product.inTransitStock > 0) product.inTransitStock--;
-                        product.physicalStock++;
+                        cargoBoxScript.InitializeBox(packedBox.ItemsInBox);
+                        foreach (var product in packedBox.ItemsInBox)
+                        {
+                            if (product.inTransitStock > 0) product.inTransitStock--;
+                            product.physicalStock++;
+                        }
                     }
                 }
             }
+        }
+        finally
+        {
+            deliveryArea.enabled = true;
         }
     }
 
@@ -147,69 +148,49 @@ public class DeliveryManager : MonoBehaviour
             Debug.LogError("HATA: Raf için spawn noktasý (Shelf Spawn Points) atanmamýþ!");
             return;
         }
-
         Transform spawnPoint = shelfSpawnPoints[nextShelfSpawnIndex];
         GameObject instance = Instantiate(productPrefab, spawnPoint.position, spawnPoint.rotation);
-
         Product productScript = instance.GetComponent<Product>();
         if (productScript != null && productScript.productDefinition != null)
         {
             if (productScript.productDefinition.inTransitStock > 0) productScript.productDefinition.inTransitStock--;
             productScript.productDefinition.physicalStock++;
         }
-
         nextShelfSpawnIndex = (nextShelfSpawnIndex + 1) % shelfSpawnPoints.Length;
     }
 
-    GameObject SpawnObjectInArea(GameObject objectToSpawn)
+    GameObject SpawnSingleObjectInArea(GameObject objectToSpawn)
     {
-        if (deliveryArea == null || objectToSpawn == null) return null;
         Collider objectCollider = objectToSpawn.GetComponent<Collider>();
-        if (objectCollider == null)
-        {
-            Debug.LogError($"{objectToSpawn.name} prefabýnda Collider yok! Çarpýþma kontrolü yapýlamaz.");
-            return null;
-        }
+        if (objectCollider == null) { Debug.LogError($"{objectToSpawn.name} prefabýnda Collider yok!"); return null; }
 
-        GameObject instance = null;
-        try
-        {
-            deliveryArea.enabled = false;
-            Bounds areaBounds = deliveryArea.bounds;
-            Vector3 objectHalfExtents = objectCollider.bounds.extents;
-            Vector3 spawnPosition = Vector3.zero;
-            int attempts = 0;
+        Bounds areaBounds = deliveryArea.bounds;
+        Vector3 objectHalfExtents = objectCollider.bounds.extents;
+        Vector3 spawnPosition = Vector3.zero;
+        int attempts = 0;
 
-            while (attempts < maxSpawnAttempts)
+        while (attempts < maxSpawnAttempts)
+        {
+            float randomX = Random.Range(areaBounds.min.x + objectHalfExtents.x, areaBounds.max.x - objectHalfExtents.x);
+            float randomZ = Random.Range(areaBounds.min.z + objectHalfExtents.z, areaBounds.max.z - objectHalfExtents.z);
+            Vector3 rayStartPoint = new Vector3(randomX, areaBounds.max.y, randomZ);
+
+            if (Physics.Raycast(rayStartPoint, Vector3.down, out RaycastHit hit, areaBounds.size.y))
             {
-                float randomX = Random.Range(areaBounds.min.x + objectHalfExtents.x, areaBounds.max.x - objectHalfExtents.x);
-                float randomZ = Random.Range(areaBounds.min.z + objectHalfExtents.z, areaBounds.max.z - objectHalfExtents.z);
-                Vector3 rayStartPoint = new Vector3(randomX, areaBounds.max.y, randomZ);
-                if (Physics.Raycast(rayStartPoint, Vector3.down, out RaycastHit hit, areaBounds.size.y))
-                {
-                    spawnPosition = new Vector3(randomX, hit.point.y + objectHalfExtents.y, randomZ);
-                }
-                else
-                {
-                    spawnPosition = new Vector3(randomX, areaBounds.min.y + objectHalfExtents.y, randomZ);
-                }
-                if (Physics.OverlapBox(spawnPosition, objectHalfExtents, Quaternion.identity).Length == 0)
-                {
-                    instance = Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
-                    break;
-                }
-                attempts++;
+                spawnPosition = new Vector3(randomX, hit.point.y + objectHalfExtents.y, randomZ);
+            }
+            else
+            {
+                spawnPosition = new Vector3(randomX, areaBounds.min.y + objectHalfExtents.y, randomZ);
             }
 
-            if (instance == null)
+            if (Physics.OverlapBox(spawnPosition, objectHalfExtents, Quaternion.identity).Length == 0)
             {
-                Debug.LogWarning($"Teslimat alaný çok dolu, {objectToSpawn.name} için uygun bir yer bulunamadý!");
+                return Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
             }
+            attempts++;
         }
-        finally
-        {
-            deliveryArea.enabled = true;
-        }
-        return instance;
+        Debug.LogWarning($"Teslimat alaný çok dolu, {objectToSpawn.name} için uygun bir yer bulunamadý!");
+        return null;
     }
 }
