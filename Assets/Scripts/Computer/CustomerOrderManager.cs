@@ -6,25 +6,21 @@ using Random = UnityEngine.Random;
 
 public class CustomerOrderManager : MonoBehaviour
 {
+    public static CustomerOrderManager Instance { get; private set; }
+
     [Header("Bağlantılar")]
     public InGameMarket inGameMarket;
     public StoreReputation storeReputation;
 
-    // --- DEĞİŞİKLİK: ZAMANLAMA AYARLARI YENİDEN DÜZENLENDİ ---
     [Header("Sipariş Sıklık Ayarları")]
-    [Tooltip("Siparişler arasındaki temel bekleme süresi aralığı (saniye).")]
-    public float minInterval = 90f;
-    public float maxInterval = 240f;
+    public float baseMinOrderInterval = 120f;
+    public float baseMaxOrderInterval = 300f;
 
     [Header("İtibar Etkileri - Sıklık")]
     [Tooltip("İtibar SIFIRKEN bekleme süresi ne kadar yavaşlasın? (1.0 = normal, 2.0 = 2 kat yavaş)")]
     public float slowdownFactorAtMinRep = 2.0f;
     [Tooltip("İtibar MAKSİMUMKEN bekleme süresi ne kadar hızlansın? (1.0 = normal, 0.2 = 5 kat hızlı)")]
-    public float speedupFactorAtMaxRep = 0.2f; // Bu değeri düşürerek hızı artırabilirsiniz
-
-    [Header("İtibar Etkileri - Kalite")]
-    public float reputationForSuccess = 1.5f;
-    public float reputationForFailure = -3.0f;
+    public float speedupFactorAtMaxRep = 0.2f;
 
     [Header("Sipariş İçerik Ayarları")]
     public int maxActiveOrders = 5;
@@ -35,9 +31,19 @@ public class CustomerOrderManager : MonoBehaviour
     [Range(0f, 1f)]
     public float maxAcceptablePriceMargin = 0.25f;
 
+    [Header("İtibar Etkileri - Kalite")]
+    public float reputationForSuccess = 1.5f;
+    public float reputationForFailure = -3.0f;
+
     public List<OrderData> activeOrders = new List<OrderData>();
     private float orderTimer;
     public static event Action OnOrderListChanged;
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(this.gameObject); }
+        else { Instance = this; }
+    }
 
     void Start()
     {
@@ -60,17 +66,12 @@ public class CustomerOrderManager : MonoBehaviour
         CheckForExpiredOrders();
     }
 
-    // GÜNCELLENMİŞ ZAMANLAYICI MANTIĞI
     void ResetOrderTimer()
     {
         float reputationPercent = (storeReputation != null) ? (storeReputation.GetCurrentReputation() / storeReputation.maxReputation) : 0f;
-
-        // Düşük itibardaki yavaşlatma faktöründen, yüksek itibardaki hızlandırma faktörüne doğru bir değer hesapla
         float timeMultiplier = Mathf.Lerp(slowdownFactorAtMinRep, speedupFactorAtMaxRep, reputationPercent);
-
-        float currentMinInterval = minInterval * timeMultiplier;
-        float currentMaxInterval = maxInterval * timeMultiplier;
-
+        float currentMinInterval = baseMinOrderInterval * timeMultiplier;
+        float currentMaxInterval = baseMaxOrderInterval * timeMultiplier;
         orderTimer = Random.Range(currentMinInterval, currentMaxInterval);
     }
 
@@ -95,7 +96,9 @@ public class CustomerOrderManager : MonoBehaviour
             if (newOrder.itemsInOrder.Any(item => item.productDefinition == product)) continue;
 
             float marketPrice = product.currentAverageMarketPrice;
-            if (marketPrice <= 0 || product.price > marketPrice * (1 + maxAcceptablePriceMargin)) continue;
+            if (marketPrice <= 0) continue;
+
+            if (product.price > marketPrice * (1 + maxAcceptablePriceMargin)) continue;
 
             float priceRatio = product.price / marketPrice;
             float demandFactor = 1.0f;
@@ -109,6 +112,7 @@ public class CustomerOrderManager : MonoBehaviour
             {
                 int baseQuantity = Random.Range(1, 4);
                 int finalQuantity = Mathf.Clamp(Mathf.RoundToInt(baseQuantity * demandFactor), 1, product.physicalStock);
+
                 if (finalQuantity > 0)
                 {
                     newOrder.itemsInOrder.Add(new OrderItemDetail(product, finalQuantity, product.price, (int)marketPrice));
@@ -121,6 +125,7 @@ public class CustomerOrderManager : MonoBehaviour
             newOrder.timeLimit = 600f;
             activeOrders.Add(newOrder);
             OnOrderListChanged?.Invoke();
+            Debug.Log($"YENİ MÜŞTERİ SİPARİŞİ OLUŞTURULDU: ID {newOrder.orderID}, Çeşit: {newOrder.itemsInOrder.Count}");
         }
     }
 
@@ -139,6 +144,7 @@ public class CustomerOrderManager : MonoBehaviour
         if (order != null && (order.status == OrderStatus.Yeni || order.status == OrderStatus.Hazirlaniyor))
         {
             order.status = OrderStatus.Completed;
+
             foreach (var item in order.itemsInOrder)
             {
                 if (item.productDefinition.physicalStock >= item.quantity)
@@ -146,7 +152,8 @@ public class CustomerOrderManager : MonoBehaviour
                     item.productDefinition.physicalStock -= item.quantity;
                 }
             }
-            storeReputation?.AddReputation(reputationForSuccess);
+            // İtibar puanı ekleme işini artık ShippingZone yapıyor.
+            // storeReputation?.AddReputation(reputationForSuccess);
             OnOrderListChanged?.Invoke();
         }
     }

@@ -76,20 +76,34 @@ public class InGameMarket : MonoBehaviour
             buttonObj.GetComponent<Button>().onClick.AddListener(() => OnCategoryButtonClicked(category));
         }
         Category defaultCategory = productCategories.FirstOrDefault(c => c.isUnlocked);
-        if (defaultCategory != null) OnCategoryButtonClicked(defaultCategory);
+        if (defaultCategory != null)
+        {
+            OnCategoryButtonClicked(defaultCategory);
+        }
+        else
+        {
+            Debug.LogWarning("Başlangıçta kilidi açık hiçbir kategori bulunamadı!");
+        }
     }
 
     public void OnCategoryButtonClicked(Category selectedCategory)
     {
+        Debug.Log($"--- OnCategoryButtonClicked METODU ÇAĞRILDI: Kategori = {selectedCategory.categoryName} ---");
+
         currentSelectedCategory = selectedCategory;
+
+        Debug.Log($"Kategorinin kilit durumu (isUnlocked): {selectedCategory.isUnlocked}");
+
         if (selectedCategory.isUnlocked)
         {
+            Debug.Log("IF bloğuna girildi. Ürünler listelenecek...");
             productGridPanel.SetActive(true);
             licensePurchasePanel.SetActive(false);
             PopulateProductGrid(selectedCategory);
         }
         else
         {
+            Debug.Log("ELSE bloğuna girildi. Lisans satın alma paneli gösterilecek.");
             productGridPanel.SetActive(false);
             licensePurchasePanel.SetActive(true);
             licenseCategoryNameText.text = $"{selectedCategory.categoryName} Lisansı";
@@ -101,12 +115,23 @@ public class InGameMarket : MonoBehaviour
 
     void PopulateProductGrid(Category category)
     {
-        foreach (Transform child in productGridParent) { Destroy(child.gameObject); }
+        // Hatanın düzeltildiği satır burası
+        Debug.Log($"PopulateProductGrid içindeyim: '{category.categoryName}' kategorisindeki {category.productsInCategory.Count} ürün işlenecek.");
+        foreach (Transform child in productGridParent)
+        {
+            Destroy(child.gameObject);
+        }
+
+        if (category == null || category.productsInCategory == null) return;
+
         foreach (var product in category.productsInCategory)
         {
             GameObject cardInstance = Instantiate(productCardPrefab, productGridParent);
             cardInstance.GetComponent<ProductCardUI>().Setup(product, category, this);
         }
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(productGridParent as RectTransform);
     }
 
     public void BuyCategoryLicense(Category categoryToUnlock)
@@ -122,7 +147,6 @@ public class InGameMarket : MonoBehaviour
     {
         if (product.productName == "Dükkan Genişletme")
         {
-            Debug.Log("Dükkan Genişletme anında uygulandı! Duvarlar kaldırılıyor.");
             if (duvar1 != null) duvar1.SetActive(false);
             if (duvar2 != null) duvar2.SetActive(false);
             product.isPurchased = true;
@@ -138,10 +162,9 @@ public class InGameMarket : MonoBehaviour
             return shelfProduct.purchaseCount < 7;
     }
 
-    // EKSİK OLAN VE HATAYA NEDEN OLAN METOT
     public List<MarketProduct> GetAllUnlockedProducts()
     {
-        List<MarketProduct> allProducts = new List<MarketProduct>();
+        var allProducts = new List<MarketProduct>();
         foreach (Category category in productCategories)
         {
             if (category.isUnlocked)

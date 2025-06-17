@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 
 public class PlayerBalance : MonoBehaviour
@@ -36,7 +36,7 @@ public class PlayerBalance : MonoBehaviour
         }
     }
 
-    // Lisans hatasýný çözen hali
+    // Lisans hatasÃ½nÃ½ Ã§Ã¶zen hali
     public bool DeductBalance(float amount)
     {
         if (amount >= 0 && currentBalance >= amount)
@@ -47,7 +47,7 @@ public class PlayerBalance : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Yetersiz bakiye veya geçersiz tutar!");
+            Debug.LogWarning("Yetersiz bakiye veya geÃ§ersiz tutar!");
             return false;
         }
     }

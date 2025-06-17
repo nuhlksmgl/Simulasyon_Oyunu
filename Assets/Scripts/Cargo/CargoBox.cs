@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 
-// Eğer DataModels.cs dosyanız bir namespace içindeyse, onu buraya ekleyin.
-// Örnek: using Simulasyon.Data;
+// Eğer DataModels sınıflarınız bir namespace içindeyse, onu buraya ekleyin.
+// Örnek: using Simulasyon.Computer;
 
 public class CargoBox : MonoBehaviour
 {
     [Header("Genel Kutu Ayarları")]
+    [Tooltip("Fişin yapışacağı Transform.")]
+    public Transform slipSlot; // YENİ EKLENDİ
     public bool isLargeBox;
     [Tooltip("Kutunun içindeki ürünlerin yerleşeceği boş Transform nesneleri.")]
     [SerializeField] private Transform[] productSlots;
@@ -35,53 +37,72 @@ public class CargoBox : MonoBehaviour
         }
     }
 
-    // =================================================================
-    // =========== YENİ EKLENEN OTOMATİK DOLDURMA METODU ==============
-    // =================================================================
-
-    /// <summary>
-    /// DeliveryManager tarafından çağrılarak kutunun içini otomatik olarak doldurur.
-    /// </summary>
     public void InitializeBox(List<MarketProduct> itemsToPlace)
     {
-        // --- KONTROL 5 ---
-        Debug.Log($"5. KUTU İÇİ DOLDURULUYOR: {gameObject.name} kutusuna {itemsToPlace.Count} adet ürün yerleştirme komutu alındı.");
-
-        // Ürünleri yerleştirmeden önce kutu kapaklarını (animasyon için) açık duruma getirelim.
         SetLidStateForced(true);
-
         foreach (var productData in itemsToPlace)
         {
             if (productData.productPrefab != null)
             {
-                // 1. Ürünün fiziksel kopyasını oluştur (prefab'dan)
                 GameObject productObj = Instantiate(productData.productPrefab);
-
-                // 2. Oluşturulan kopyanın üzerindeki 'Product' script'ini al
                 Product productScript = productObj.GetComponent<Product>();
-
                 if (productScript != null)
                 {
-                    // 3. Entegrasyonun kilit noktası: Yeni ürüne, hangi market verisine ait olduğunu söylüyoruz.
                     productScript.productDefinition = productData;
-
-                    // 4. Mevcut 'TryPlaceProduct' metodunu kullanarak ürünü kutuya yerleştir.
                     bool success = TryPlaceProduct(productScript);
                     if (!success)
                     {
                         Debug.LogError($"{productData.productName} kutuya yerleştirilemedi! Kutu dolu veya ürün boyutu uygun değil.", this.gameObject);
-                        Destroy(productObj); // Yerleştirilemezse objeyi yok et.
+                        Destroy(productObj);
                     }
                 }
             }
         }
-        // Tüm ürünler yerleştirildikten sonra kapakları kapat.
         SetLidStateForced(false);
     }
 
-    // =================================================================
-    // =========== MEVCUT METOTLARINIZ (DEĞİŞİKLİK YOK) =================
-    // =================================================================
+    public float CalculatePackingPenalty()
+    {
+        if (assignedOrder == null || assignedOrder.itemsInOrder == null) return -10f;
+
+        var requiredItems = assignedOrder.itemsInOrder
+            .GroupBy(item => item.productDefinition.productName)
+            .ToDictionary(group => group.Key, group => group.Sum(item => item.quantity));
+
+        var placedItems = placedProducts
+            .GroupBy(prod => prod.productDefinition.productName)
+            .ToDictionary(group => group.Key, group => group.Count());
+
+        float penalty = 0f;
+        float basePenalty = CustomerOrderManager.Instance != null ? CustomerOrderManager.Instance.reputationForFailure : -3.0f;
+
+        foreach (var required in requiredItems)
+        {
+            if (!placedItems.ContainsKey(required.Key) || placedItems[required.Key] < required.Value)
+            {
+                int missingCount = required.Value - (placedItems.ContainsKey(required.Key) ? placedItems[required.Key] : 0);
+                penalty += basePenalty * missingCount;
+            }
+        }
+
+        foreach (var placed in placedItems)
+        {
+            if (!requiredItems.ContainsKey(placed.Key))
+            {
+                penalty += (basePenalty / 2) * placed.Value;
+            }
+            else if (placed.Value > requiredItems[placed.Key])
+            {
+                int extraCount = placed.Value - requiredItems[placed.Key];
+                penalty += (basePenalty / 2) * extraCount;
+            }
+        }
+
+        if (penalty == 0) Debug.Log("Paketleme Mükemmel!");
+        else Debug.LogWarning($"Paketleme Hatalı! İtibar Cezası: {penalty}");
+
+        return penalty;
+    }
 
     public void ToggleLids()
     {
@@ -95,7 +116,6 @@ public class CargoBox : MonoBehaviour
         if (boxAnimator != null)
         {
             boxAnimator.SetBool("IsOpen", open);
-            // Animasyonun doğrudan son karesine gitmesini sağlar
             if (open) boxAnimator.Play("Open_State", 0, 1f);
             else boxAnimator.Play("Closed_State", 0, 1f);
         }
@@ -154,11 +174,7 @@ public class CargoBox : MonoBehaviour
             int slotIndexToFree = -1;
             for (int i = 0; i < productSlots.Length; i++)
             {
-                if (productSlots[i] == productToTake.transform.parent)
-                {
-                    slotIndexToFree = i;
-                    break;
-                }
+                if (productSlots[i] == productToTake.transform.parent) { slotIndexToFree = i; break; }
             }
             if (slotIndexToFree != -1) slotOccupied[slotIndexToFree] = false;
 

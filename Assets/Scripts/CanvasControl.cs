@@ -1,33 +1,43 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class CanvasControl : MonoBehaviour
 {
-    [Header("Ana Ayarlar")]
-    [SerializeField] private GameObject canvas;
+    [Header("UI Ayarları")]
+    [SerializeField] private GameObject computerCanvas; // İsim daha anlaşılır olması için değiştirildi
     [SerializeField] private KeyCode interactKey = KeyCode.E;
+
+    [Header("Etkileşim Ayarları")]
     [SerializeField] private Transform player;
-    [SerializeField] private MarketScreenManager marketScreenManager;
     [SerializeField] private float interactionDistance = 3f;
 
-    // YEN� EKLENEN SATIR
-    [Header("UI Elemanlar�")]
-    [SerializeField] private GameObject crosshairUI; // Crosshair'�n GameObject'ini buraya atayaca��z
+    // YENİ EKLENDİ: Kamera referansları
+    [Header("Kamera Ayarları")]
+    [SerializeField] private Camera mainCamera; // Oyuncunun ana kamerası
+    [SerializeField] private Camera uiCamera;   // Bilgisayar ekranına bakan kamera
+
+    [Header("UI Elemanları")]
+    [SerializeField] private GameObject crosshairUI;
+
+    [Header("Yönetici Referansları")]
+    [SerializeField] private MarketScreenManager marketScreenManager;
 
     public static bool IsUiOpen { get; private set; }
 
-    // ... Start() metodu ayn� kalacak ...
     void Start()
     {
-        if (canvas != null) canvas.SetActive(false);
-        if (crosshairUI != null) crosshairUI.SetActive(true); // Oyun ba��nda crosshair a��k olsun
+        // GÜNCELLEME: Başlangıçta UI kamerasının da kapalı olduğundan emin ol
+        if (computerCanvas != null) computerCanvas.SetActive(false);
+        if (uiCamera != null) uiCamera.gameObject.SetActive(false);
+        if (mainCamera != null) mainCamera.gameObject.SetActive(true);
+
+        if (crosshairUI != null) crosshairUI.SetActive(true);
         IsUiOpen = false;
         LockCursor();
     }
 
-
-    // ... Update() metodu ayn� kalacak ...
     void Update()
     {
+        // UI kapalıyken E'ye basılmasını dinle
         if (!IsUiOpen)
         {
             if (IsPlayerInDistance() && Input.GetKeyDown(interactKey))
@@ -35,6 +45,7 @@ public class CanvasControl : MonoBehaviour
                 OpenCanvas();
             }
         }
+        // UI açıkken ESC'ye basılmasını dinle
         else
         {
             if (Input.GetKeyDown(KeyCode.Escape))
@@ -44,31 +55,39 @@ public class CanvasControl : MonoBehaviour
         }
     }
 
-
+    // GÜNCELLENMİŞ METOT
     public void OpenCanvas()
     {
         IsUiOpen = true;
-        canvas.SetActive(true);
-        if (marketScreenManager != null) marketScreenManager.ShowMainMenu();
 
-        // YEN� EKLENEN SATIR: Men� a��l�nca crosshair'� kapat
+        // Kameraları değiştir
+        mainCamera?.gameObject.SetActive(false);
+        uiCamera?.gameObject.SetActive(true);
+
+        // UI'ı aç ve crosshair'ı kapat
+        computerCanvas?.SetActive(true);
+        marketScreenManager?.ShowMainMenu();
         if (crosshairUI != null) crosshairUI.SetActive(false);
 
         UnlockCursor();
     }
 
+    // GÜNCELLENMİŞ METOT
     public void CloseCanvas()
     {
         IsUiOpen = false;
-        if (canvas != null) canvas.SetActive(false);
 
-        // YEN� EKLENEN SATIR: Men� kapan�nca crosshair'� geri a�
+        // Kameraları eski haline getir
+        uiCamera?.gameObject.SetActive(false);
+        mainCamera?.gameObject.SetActive(true);
+
+        // UI'ı kapat ve crosshair'ı aç
+        computerCanvas?.SetActive(false);
         if (crosshairUI != null) crosshairUI.SetActive(true);
 
         LockCursor();
     }
 
-    // ... Script'in geri kalan� ayn� kalacak ...
     private bool IsPlayerInDistance()
     {
         if (player == null) return false;

@@ -17,7 +17,7 @@ public class ProductCardUI : MonoBehaviour
 
     private MarketProduct currentProduct;
     private Category parentCategory;
-    private InGameMarket marketController; // 'CanPurchaseShelf' gibi kontroller için hala gerekli
+    private InGameMarket marketController;
     private int currentQuantity = 1;
 
     void Awake()
@@ -33,13 +33,23 @@ public class ProductCardUI : MonoBehaviour
         this.parentCategory = category;
         this.marketController = market;
 
-        if (productImage != null) productImage.sprite = product.productImage;
-        if (productNameText != null) productNameText.text = product.productName;
-        if (priceText != null) priceText.text = $"{product.price}₺";
+        if (productImage != null && product.productImage != null)
+        {
+            productImage.sprite = product.productImage;
+        }
+        if (productNameText != null)
+        {
+            productNameText.text = product.productName;
+        }
+        if (priceText != null)
+        {
+            priceText.text = $"{product.price}₺";
+        }
 
         currentQuantity = 1;
         UpdateQuantityText();
 
+        // Butonların durumunu ayarla
         addToCartButton.interactable = true;
         addToCartButton.GetComponentInChildren<TextMeshProUGUI>().text = "Sepete Ekle";
 
@@ -48,10 +58,13 @@ public class ProductCardUI : MonoBehaviour
             addToCartButton.interactable = false;
             addToCartButton.GetComponentInChildren<TextMeshProUGUI>().text = "Satın Alındı";
         }
-        else if (product.productName == "Raf" && !marketController.CanPurchaseShelf())
+        else if (product.productName == "Raf")
         {
-            addToCartButton.interactable = false;
-            addToCartButton.GetComponentInChildren<TextMeshProUGUI>().text = "Limit Dolu";
+            if (marketController != null && !marketController.CanPurchaseShelf())
+            {
+                addToCartButton.interactable = false;
+                addToCartButton.GetComponentInChildren<TextMeshProUGUI>().text = "Limit Dolu";
+            }
         }
     }
 
@@ -80,14 +93,9 @@ public class ProductCardUI : MonoBehaviour
 
     private void OnAddToCartClicked()
     {
-        if (currentProduct != null && parentCategory != null)
+        if (currentProduct != null && ShoppingCart.Instance != null)
         {
-            // DÜZELTME: Doğrudan ShoppingCart script'ini çağırıyoruz.
             ShoppingCart.Instance.AddItem(currentProduct, currentQuantity);
-        }
-        else
-        {
-            Debug.LogError("Ürün veya kategori bilgisi eksik, sepete eklenemedi!");
         }
     }
 }

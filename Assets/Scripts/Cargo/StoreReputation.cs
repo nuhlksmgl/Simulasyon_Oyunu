@@ -1,25 +1,25 @@
-// StoreReputation.cs
+ï»¿// StoreReputation.cs
 using UnityEngine;
-using TMPro; // Eğer puanı UI'da göstereceksen
-// using UnityEngine.UI; // Eğer bar kullanacaksan
+using TMPro; // EÃ°er puanÃ½ UI'da gÃ¶stereceksen
+// using UnityEngine.UI; // EÃ°er bar kullanacaksan
 
 public class StoreReputation : MonoBehaviour
 {
     public static StoreReputation Instance { get; private set; }
 
-    [Header("İtibar Ayarları")]
+    [Header("Ãtibar AyarlarÃ½")]
     [Range(0f, 100f)]
-    public float currentReputation = 70f; // Başlangıç itibarı (0-100 arası)
+    public float currentReputation = 70f; // BaÃ¾langÃ½Ã§ itibarÃ½ (0-100 arasÃ½)
     public float maxReputation = 100f;
-    public float minReputation = 0f; // İflas için kritik eşik (veya 0)
-    public float reputationThresholdForBankruptcy = 10f; // Bu değerin altına düşünce iflas uyarısı/riski
+    public float minReputation = 0f; // Ãflas iÃ§in kritik eÃ¾ik (veya 0)
+    public float reputationThresholdForBankruptcy = 10f; // Bu deÃ°erin altÃ½na dÃ¼Ã¾Ã¼nce iflas uyarÃ½sÃ½/riski
 
     [Header("UI (Opsiyonel)")]
-    public TextMeshProUGUI reputationText; // Puanı gösterecek UI elemanı
-    // public Image reputationBar; // Puanı bar olarak gösterecek UI elemanı (şimdilik yorumda)
+    public TextMeshProUGUI reputationText; // PuanÃ½ gÃ¶sterecek UI elemanÃ½
+    // public Image reputationBar; // PuanÃ½ bar olarak gÃ¶sterecek UI elemanÃ½ (Ã¾imdilik yorumda)
 
-    // Event: İtibar puanı değiştiğinde tetiklenir.
-    // Parametre olarak yeni itibar puanını gönderir.
+    // Event: Ãtibar puanÃ½ deÃ°iÃ¾tiÃ°inde tetiklenir.
+    // Parametre olarak yeni itibar puanÃ½nÃ½ gÃ¶nderir.
     public static event System.Action<float> OnReputationChanged;
 
     void Awake()
@@ -27,7 +27,7 @@ public class StoreReputation : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // DontDestroyOnLoad(gameObject); // Oyun boyunca tek bir instancesta kalması gerekiyorsa
+            // DontDestroyOnLoad(gameObject); // Oyun boyunca tek bir instancesta kalmasÃ½ gerekiyorsa
         }
         else
         {
@@ -37,24 +37,24 @@ public class StoreReputation : MonoBehaviour
 
     void Start()
     {
-        // Başlangıçta UI'ı güncelle ve event'i tetikle (diğer sistemler başlangıç değerini alsın)
+        // BaÃ¾langÃ½Ã§ta UI'Ã½ gÃ¼ncelle ve event'i tetikle (diÃ°er sistemler baÃ¾langÃ½Ã§ deÃ°erini alsÃ½n)
         UpdateReputationUI();
         OnReputationChanged?.Invoke(currentReputation);
     }
 
     /// <summary>
-    /// Mağaza itibarını belirli bir miktar artırır veya azaltır.
+    /// MaÃ°aza itibarÃ½nÃ½ belirli bir miktar artÃ½rÃ½r veya azaltÃ½r.
     /// </summary>
-    /// <param name="amount">Eklenecek veya çıkarılacak itibar miktarı (negatif olabilir).</param>
+    /// <param name="amount">Eklenecek veya Ã§Ã½karÃ½lacak itibar miktarÃ½ (negatif olabilir).</param>
     public void AddReputation(float amount)
     {
         currentReputation = Mathf.Clamp(currentReputation + amount, minReputation, maxReputation);
-        Debug.Log($"İTİBAR DEĞİŞTİ: {amount:+0.0;-0.0}. Yeni İtibar: {currentReputation:F1}");
+        Debug.Log($"ÃTÃBAR DEÃÃÃTÃ: {amount:+0.0;-0.0}. Yeni Ãtibar: {currentReputation:F1}");
 
         UpdateReputationUI();
         OnReputationChanged?.Invoke(currentReputation); // Event'i tetikle
 
-        // İflas Kontrolü
+        // Ãflas KontrolÃ¼
         if (currentReputation <= reputationThresholdForBankruptcy)
         {
             HandleLowReputation();
@@ -65,7 +65,7 @@ public class StoreReputation : MonoBehaviour
     {
         if (reputationText != null)
         {
-            reputationText.text = $"Mağaza Puanı: {currentReputation:F1}"; // / {maxReputation}";
+            reputationText.text = $"MaÃ°aza PuanÃ½: {currentReputation:F1}"; // / {maxReputation}";
         }
         // if (reputationBar != null)
         // {
@@ -75,18 +75,18 @@ public class StoreReputation : MonoBehaviour
 
     void HandleLowReputation()
     {
-        // Bu fonksiyon itibar çok düştüğünde çağrılır.
-        // İflas mekaniği burada tetiklenebilir veya oyuncuya ciddi uyarılar verilebilir.
+        // Bu fonksiyon itibar Ã§ok dÃ¼Ã¾tÃ¼Ã°Ã¼nde Ã§aÃ°rÃ½lÃ½r.
+        // Ãflas mekaniÃ°i burada tetiklenebilir veya oyuncuya ciddi uyarÃ½lar verilebilir.
         if (currentReputation <= minReputation)
         {
-            Debug.LogWarning("MAĞAZA İTİBARI SIFIRLANDI! İFLAS RİSKİ ÇOK YÜKSEK!");
-            // Burada oyun sonu veya iflas senaryosu başlatılabilir.
-            // Örneğin: Time.timeScale = 0; FindObjectOfType<UIManager>()?.ShowGameOverScreen("İtibar Kaybı Nedeniyle İflas!");
+            Debug.LogWarning("MAÃAZA ÃTÃBARI SIFIRLANDI! ÃFLAS RÃSKÃ Ã‡OK YÃœKSEK!");
+            // Burada oyun sonu veya iflas senaryosu baÃ¾latÃ½labilir.
+            // Ã–rneÃ°in: Time.timeScale = 0; FindObjectOfType<UIManager>()?.ShowGameOverScreen("Ãtibar KaybÃ½ Nedeniyle Ãflas!");
         }
         else
         {
-            Debug.LogWarning($"DİKKAT: Mağaza itibarı kritik seviyede: {currentReputation:F1}!");
-            // Oyuncuya uyarı mesajları gösterilebilir (Chirper sistemiyle vb.)
+            Debug.LogWarning($"DÃKKAT: MaÃ°aza itibarÃ½ kritik seviyede: {currentReputation:F1}!");
+            // Oyuncuya uyarÃ½ mesajlarÃ½ gÃ¶sterilebilir (Chirper sistemiyle vb.)
         }
     }
 

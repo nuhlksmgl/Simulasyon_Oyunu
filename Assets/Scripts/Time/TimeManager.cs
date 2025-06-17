@@ -1,16 +1,16 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 
 public class TimeManager : MonoBehaviour
 {
-    // YENİ EKLENDİ: Singleton yapısı için statik referans
+    // YENÃ EKLENDÃ: Singleton yapÃ½sÃ½ iÃ§in statik referans
     public static TimeManager Instance { get; private set; }
 
-    [Header("Zaman Ayarları")]
-    [Tooltip("Oyun zamanının gerçek zamana göre ne kadar hızlı akacağını belirler. 1 = Gerçek zamanlı, 60 = Gerçek 1 saniye oyun içi 1 dakika.")]
+    [Header("Zaman AyarlarÃ½")]
+    [Tooltip("Oyun zamanÃ½nÃ½n gerÃ§ek zamana gÃ¶re ne kadar hÃ½zlÃ½ akacaÃ°Ã½nÃ½ belirler. 1 = GerÃ§ek zamanlÃ½, 60 = GerÃ§ek 1 saniye oyun iÃ§i 1 dakika.")]
     public float timeMultiplier = 60f;
 
-    [Header("Başlangıç Zamanı")]
+    [Header("BaÃ¾langÃ½Ã§ ZamanÃ½")]
     [Range(0, 23)]
     public int startHour = 7;
     [Range(0, 59)]
@@ -21,13 +21,13 @@ public class TimeManager : MonoBehaviour
     public int CurrentMinute { get; private set; }
     public int CurrentDay { get; private set; }
 
-    [Header("UI Referansları")]
+    [Header("UI ReferanslarÃ½")]
     public TMP_Text timeText;
     public TMP_Text dayText;
 
     private float secondsPassedInGameTime = 0f;
 
-    // YENİ EKLENDİ: Singleton'ı ayarlar
+    // YENÃ EKLENDÃ: Singleton'Ã½ ayarlar
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -69,7 +69,7 @@ public class TimeManager : MonoBehaviour
 
         if (CurrentDay > previousDay)
         {
-            // Yeni gün event'i burada tetiklenebilir
+            // Yeni gÃ¼n event'i burada tetiklenebilir
         }
     }
 
@@ -81,7 +81,7 @@ public class TimeManager : MonoBehaviour
         }
         if (dayText != null)
         {
-            dayText.text = "Gün: " + CurrentDay;
+            dayText.text = "GÃ¼n: " + CurrentDay;
         }
     }
 

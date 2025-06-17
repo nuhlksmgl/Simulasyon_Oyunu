@@ -9,7 +9,7 @@ public class MarketScreenManager : MonoBehaviour
     [SerializeField] private GameObject sellPanel;
     [SerializeField] private GameObject shoppingCartPanel; // YENİ EKLENDİ
     [SerializeField] private GameObject orderPanel;
-    [SerializeField] private GameObject deliveryPanel;
+    // deliveryPanel kaldırıldı
 
     // Market ilk açıldığında veya Geri butonlarıyla Ana Menü'ye dönüldüğünde çağrılır.
     public void ShowMainMenu()
@@ -18,7 +18,7 @@ public class MarketScreenManager : MonoBehaviour
         buyPanel?.SetActive(false);
         sellPanel?.SetActive(false);
         shoppingCartPanel?.SetActive(false);
-        // Diğer panelleri de burada kapatabilirsiniz (orderPanel, deliveryPanel)
+        orderPanel?.SetActive(false);
     }
 
     // "Buy" butonuna tıklandığında bu metot çalışacak
@@ -38,7 +38,6 @@ public class MarketScreenManager : MonoBehaviour
     // Sağ üstteki sepet butonuna tıklandığında çağrılacak YENİ METOT
     public void OpenCartPanel()
     {
-        // Diğer panelleri kapatıp sepeti açar
         buyPanel?.SetActive(false);
         sellPanel?.SetActive(false);
         mainMenuPanel?.SetActive(false);
@@ -50,6 +49,16 @@ public class MarketScreenManager : MonoBehaviour
     {
         shoppingCartPanel?.SetActive(false);
         buyPanel?.SetActive(true);
+    }
+
+    // Order Panelini açmak için kullanılacak YENİ METOT
+    public void OpenOrderPanel()
+    {
+        mainMenuPanel?.SetActive(false);
+        buyPanel?.SetActive(false);
+        sellPanel?.SetActive(false);
+        shoppingCartPanel?.SetActive(false);
+        orderPanel?.SetActive(true);
     }
 
     // Market arayüzünü tamamen kapatır

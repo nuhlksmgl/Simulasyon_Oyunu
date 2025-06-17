@@ -67,8 +67,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 'Toplam Tutar : '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
+  m_sharedMaterial: {fileID: -1423936331548901602, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -201,8 +201,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Sipari\u015F No :"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
+  m_sharedMaterial: {fileID: -1423936331548901602, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -456,8 +456,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Haz\u0131rlamaya Ba\u015Fla"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
+  m_sharedMaterial: {fileID: -1423936331548901602, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -690,8 +690,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Kargo T\xFCr\xFC : "
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
+  m_sharedMaterial: {fileID: -1423936331548901602, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
