@@ -1,5 +1,4 @@
-﻿// FileName: ObjectPickup.cs
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -363,8 +362,15 @@ public class ObjectPickup : MonoBehaviour
         if (bestSlot != null && closestDist <= shelfPlaceDistance)
         {
             heldObject.transform.SetParent(bestSlot);
-            heldObject.transform.SetPositionAndRotation(bestSlot.position, bestSlot.rotation);
-            heldObject.transform.localScale = p.GetOriginalWorldScale();
+            heldObject.transform.localPosition = Vector3.zero; // Pozisyonu sıfırla
+            heldObject.transform.localRotation = Quaternion.identity; // Rotasyonu sıfırla
+            // Ürünün orijinal ölçeğini rafın hiyerarşisine göre doğru uygula
+            Vector3 parentWorldScale = bestSlot.lossyScale;
+            heldObject.transform.localScale = new Vector3(
+                p.GetOriginalWorldScale().x / parentWorldScale.x,
+                p.GetOriginalWorldScale().y / parentWorldScale.y,
+                p.GetOriginalWorldScale().z / parentWorldScale.z
+            );
             if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
             p.isHeld = false;
             heldObject = null;

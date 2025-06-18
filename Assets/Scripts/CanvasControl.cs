@@ -48,7 +48,7 @@ public class CanvasControl : MonoBehaviour
         // UI açıkken ESC'ye basılmasını dinle
         else
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (Input.GetKeyDown((interactKey)))
             {
                 CloseCanvas();
             }

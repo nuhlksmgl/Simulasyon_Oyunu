@@ -411,6 +411,37 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &6387692216273843210
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2801265866099405089}
+  m_Layer: 11
+  m_Name: SlipSlot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2801265866099405089
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6387692216273843210}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.70710677, z: -0.70710677, w: 0}
+  m_LocalPosition: {x: 0.585, y: -0.34, z: 0.569}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8048242582250215173}
+  m_LocalEulerAnglesHint: {x: -90, y: -90, z: -90}
 --- !u!1 &6844381544650896688
 GameObject:
   m_ObjectHideFlags: 0
@@ -598,6 +629,7 @@ Transform:
   - {fileID: 7826927552583293657}
   - {fileID: 1021332433073247198}
   - {fileID: 4141574890605276927}
+  - {fileID: 2801265866099405089}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!54 &5417840357746045648
@@ -626,7 +658,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &6150167382852914127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -639,6 +671,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6390d482510f204ea0f37811a717b7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  slipSlot: {fileID: 2801265866099405089}
   isLargeBox: 1
   productSlots:
   - {fileID: 140496978397811439}

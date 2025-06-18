@@ -726,6 +726,7 @@ Transform:
   - {fileID: 1116276388584556316}
   - {fileID: 8239450548640440995}
   - {fileID: 4415248770701036666}
+  - {fileID: 2861444523083758956}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!54 &1738604536210636828
@@ -754,7 +755,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &5654788404006083935
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -767,6 +768,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6390d482510f204ea0f37811a717b7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  slipSlot: {fileID: 2861444523083758956}
   isLargeBox: 1
   productSlots:
   - {fileID: 6818293227442793906}
@@ -774,7 +776,7 @@ MonoBehaviour:
   - {fileID: 7300753481873738300}
   - {fileID: 8248196500124387676}
   assignedOrder:
-    orderID: 8125b815
+    orderID: 
     customerName: 
     itemsInOrder: []
     status: 0
@@ -917,6 +919,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4974269685887852510}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8719676458523406638
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2861444523083758956}
+  m_Layer: 11
+  m_Name: SlipSlot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2861444523083758956
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8719676458523406638}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.70710677, z: -0.70710677, w: 0}
+  m_LocalPosition: {x: 0.609, y: -0.273, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2039425412880224431}
+  m_LocalEulerAnglesHint: {x: -90, y: -90, z: -90}
 --- !u!1 &8876371430702198113
 GameObject:
   m_ObjectHideFlags: 0
