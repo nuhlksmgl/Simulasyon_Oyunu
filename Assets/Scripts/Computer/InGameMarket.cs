@@ -117,16 +117,12 @@ public class InGameMarket : MonoBehaviour
 
         if (category == null || category.productsInCategory == null) return;
 
-        // KONTROL MESAJI: Bu log, döngüye kaç ürün girdiğini size söyleyecektir.
-        Debug.Log($"'{category.categoryName}' kategorisi için {category.productsInCategory.Count} adet kart oluşturuluyor.");
-
         foreach (var product in category.productsInCategory)
         {
             GameObject cardInstance = Instantiate(productCardPrefab, productGridParent);
             cardInstance.GetComponent<ProductCardUI>().Setup(product, category, this);
         }
 
-        // Layout'u yeniden hesaplamaya zorla (üst üste binmeyi engeller)
         Canvas.ForceUpdateCanvases();
         if (productGridParent is RectTransform)
         {

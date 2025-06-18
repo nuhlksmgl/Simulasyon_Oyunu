@@ -13,8 +13,10 @@ public class DeliveryManager : MonoBehaviour
     private int nextShelfSpawnIndex = 0;
 
     [Header("Genel Spawn Ayarlarý")]
-    [SerializeField] private int maxSpawnAttempts = 20;
+    [Tooltip("Boþ bir yer bulmak için en fazla kaç deneme yapsýn?")]
+    [SerializeField] private int maxSpawnAttempts = 30;
 
+    // Ýç veri yapýlarý
     private class ActiveDelivery { public float DeliveryTimestamp; public List<PackedBox> PackedBoxes; }
     private class PackedBox { public GameObject BoxPrefab; public List<MarketProduct> ItemsInBox; }
     private List<ActiveDelivery> activeDeliveries = new List<ActiveDelivery>();
@@ -22,7 +24,11 @@ public class DeliveryManager : MonoBehaviour
     private class ActiveDirectDelivery { public float DeliveryTimestamp; public GameObject ProductPrefab; }
     private List<ActiveDirectDelivery> activeDirectDeliveries = new List<ActiveDirectDelivery>();
 
-    void Awake() { Instance = this; }
+    void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(this.gameObject); }
+        else { Instance = this; }
+    }
 
     void Update()
     {
@@ -110,18 +116,60 @@ public class DeliveryManager : MonoBehaviour
         }
     }
 
+    // --- GÜNCELLENMÝÞ VE DÜZELTÝLMÝÞ SPAWN METODU ---
     void SpawnBoxes(List<PackedBox> packedBoxes)
     {
         if (deliveryArea == null) { Debug.LogError("DeliveryManager: Teslimat Alaný atanmamýþ!"); return; }
 
+        Bounds areaBounds = deliveryArea.bounds;
+
         try
         {
+            // Alanýn kendi collider'ýný en baþta bir kez kapatýyoruz.
             deliveryArea.enabled = false;
+
             foreach (var packedBox in packedBoxes)
             {
-                GameObject boxInstance = SpawnSingleObjectInArea(packedBox.BoxPrefab);
-                if (boxInstance != null)
+                Collider objectCollider = packedBox.BoxPrefab.GetComponent<Collider>();
+                if (objectCollider == null)
                 {
+                    Debug.LogError($"{packedBox.BoxPrefab.name} prefabýnda Collider yok!");
+                    continue; // Bu kutuyu atla, diðerlerine devam et
+                }
+
+                Vector3 objectHalfExtents = objectCollider.bounds.extents;
+                Vector3 spawnPosition = Vector3.zero;
+                int attempts = 0;
+                bool positionFound = false;
+
+                // Bu kutu için boþ bir yer bulana kadar döngüye gir.
+                while (attempts < maxSpawnAttempts)
+                {
+                    float randomX = Random.Range(areaBounds.min.x + objectHalfExtents.x, areaBounds.max.x - objectHalfExtents.x);
+                    float randomZ = Random.Range(areaBounds.min.z + objectHalfExtents.z, areaBounds.max.z - objectHalfExtents.z);
+                    Vector3 rayStartPoint = new Vector3(randomX, areaBounds.max.y, randomZ);
+
+                    if (Physics.Raycast(rayStartPoint, Vector3.down, out RaycastHit hit, areaBounds.size.y))
+                    {
+                        spawnPosition = new Vector3(randomX, hit.point.y + objectHalfExtents.y, randomZ);
+                    }
+                    else
+                    {
+                        spawnPosition = new Vector3(randomX, areaBounds.min.y + objectHalfExtents.y, randomZ);
+                    }
+
+                    // Belirlenen hacmin tamamen boþ olup olmadýðýný kontrol et.
+                    if (Physics.OverlapBox(spawnPosition, objectHalfExtents, Quaternion.identity).Length == 0)
+                    {
+                        positionFound = true;
+                        break;
+                    }
+                    attempts++;
+                }
+
+                if (positionFound)
+                {
+                    GameObject boxInstance = Instantiate(packedBox.BoxPrefab, spawnPosition, Quaternion.identity);
                     var cargoBoxScript = boxInstance.GetComponent<CargoBox>();
                     if (cargoBoxScript != null)
                     {
@@ -133,10 +181,15 @@ public class DeliveryManager : MonoBehaviour
                         }
                     }
                 }
+                else
+                {
+                    Debug.LogWarning($"Alan dolu, {packedBox.BoxPrefab.name} için yer bulunamadý!");
+                }
             }
         }
         finally
         {
+            // Tüm kutular yerleþtirildikten sonra collider'ý tekrar aç.
             deliveryArea.enabled = true;
         }
     }
@@ -148,49 +201,17 @@ public class DeliveryManager : MonoBehaviour
             Debug.LogError("HATA: Raf için spawn noktasý (Shelf Spawn Points) atanmamýþ!");
             return;
         }
+
         Transform spawnPoint = shelfSpawnPoints[nextShelfSpawnIndex];
         GameObject instance = Instantiate(productPrefab, spawnPoint.position, spawnPoint.rotation);
+
         Product productScript = instance.GetComponent<Product>();
         if (productScript != null && productScript.productDefinition != null)
         {
             if (productScript.productDefinition.inTransitStock > 0) productScript.productDefinition.inTransitStock--;
             productScript.productDefinition.physicalStock++;
         }
+
         nextShelfSpawnIndex = (nextShelfSpawnIndex + 1) % shelfSpawnPoints.Length;
-    }
-
-    GameObject SpawnSingleObjectInArea(GameObject objectToSpawn)
-    {
-        Collider objectCollider = objectToSpawn.GetComponent<Collider>();
-        if (objectCollider == null) { Debug.LogError($"{objectToSpawn.name} prefabýnda Collider yok!"); return null; }
-
-        Bounds areaBounds = deliveryArea.bounds;
-        Vector3 objectHalfExtents = objectCollider.bounds.extents;
-        Vector3 spawnPosition = Vector3.zero;
-        int attempts = 0;
-
-        while (attempts < maxSpawnAttempts)
-        {
-            float randomX = Random.Range(areaBounds.min.x + objectHalfExtents.x, areaBounds.max.x - objectHalfExtents.x);
-            float randomZ = Random.Range(areaBounds.min.z + objectHalfExtents.z, areaBounds.max.z - objectHalfExtents.z);
-            Vector3 rayStartPoint = new Vector3(randomX, areaBounds.max.y, randomZ);
-
-            if (Physics.Raycast(rayStartPoint, Vector3.down, out RaycastHit hit, areaBounds.size.y))
-            {
-                spawnPosition = new Vector3(randomX, hit.point.y + objectHalfExtents.y, randomZ);
-            }
-            else
-            {
-                spawnPosition = new Vector3(randomX, areaBounds.min.y + objectHalfExtents.y, randomZ);
-            }
-
-            if (Physics.OverlapBox(spawnPosition, objectHalfExtents, Quaternion.identity).Length == 0)
-            {
-                return Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
-            }
-            attempts++;
-        }
-        Debug.LogWarning($"Teslimat alaný çok dolu, {objectToSpawn.name} için uygun bir yer bulunamadý!");
-        return null;
     }
 }

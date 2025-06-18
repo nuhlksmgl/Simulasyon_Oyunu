@@ -24,7 +24,7 @@ public class PlayerBalance : MonoBehaviour
 
     private void UpdateBalanceUI()
     {
-        if (balanceText != null) { balanceText.text = $"Bakiyen: {currentBalance:F2}$"; }
+        if (balanceText != null) { balanceText.text = $" {currentBalance:F2}$"; }
     }
 
     public void AddBalance(float amount)

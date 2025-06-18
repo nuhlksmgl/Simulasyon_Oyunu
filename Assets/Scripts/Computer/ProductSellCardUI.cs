@@ -17,20 +17,14 @@ public class ProductSellCardUI : MonoBehaviour
     {
         if (priceInputField != null)
         {
-            // Input alanýna bir fiyat girilip enter'a basýldýðýnda veya dýþarý týklandýðýnda
-            // OnPriceChanged metodunu çaðýracak bir listener ekliyoruz.
             priceInputField.onEndEdit.AddListener(OnPriceChanged);
         }
     }
 
-    /// <summary>
-    /// Kartýn bilgilerini doldurur. SellPanelManager tarafýndan çaðrýlýr.
-    /// </summary>
     public void Setup(MarketProduct product)
     {
         this.currentProduct = product;
 
-        // Kartýn görselini ve yazýlarýný ürün verileriyle doldur
         if (productImage != null && product.productImage != null)
         {
             productImage.sprite = product.productImage;
@@ -43,7 +37,6 @@ public class ProductSellCardUI : MonoBehaviour
 
         if (stokText != null)
         {
-            // Fiziksel stoðu gösterir
             stokText.text = $"Stok: {product.physicalStock}";
         }
 
@@ -54,28 +47,25 @@ public class ProductSellCardUI : MonoBehaviour
 
         if (priceInputField != null)
         {
-            // Input alanýna ürünün mevcut satýþ fiyatýný yaz
             priceInputField.text = product.price.ToString();
         }
     }
 
-    /// <summary>
-    /// Oyuncu yeni bir fiyat girdiðinde bu metot çaðrýlýr.
-    /// </summary>
     private void OnPriceChanged(string newPriceString)
     {
         if (currentProduct == null) return;
 
-        // Input alanýna girilen metni sayýya çevirmeye çalýþ
-        if (int.TryParse(newPriceString, out int newPrice))
+        if (int.TryParse(newPriceString, out int newPrice) && newPrice > 0)
         {
-            // Baþarýlý olursa, ürünün satýþ fiyatýný güncelle
             currentProduct.price = newPrice;
-            Debug.Log($"{currentProduct.productName} ürününün yeni satýþ fiyatý {newPrice}$ olarak ayarlandý.");
+
+            // ÖNEMLÝ: Ürünü satýþa koyuldu olarak iþaretle
+            currentProduct.isListedForSale = true;
+
+            Debug.Log($"{currentProduct.productName} ürününün yeni satýþ fiyatý {newPrice}$ olarak ayarlandý ve satýþa konuldu.");
         }
         else
         {
-            // Geçersiz bir deðer girilirse, input alanýný ürünün son geçerli fiyatýyla doldur.
             priceInputField.text = currentProduct.price.ToString();
             Debug.LogWarning("Geçersiz fiyat girildi. Deðiþiklik yapýlmadý.");
         }

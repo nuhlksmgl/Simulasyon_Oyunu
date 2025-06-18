@@ -65,7 +65,7 @@ public class StoreReputation : MonoBehaviour
     {
         if (reputationText != null)
         {
-            reputationText.text = $"Maðaza Puaný: {currentReputation:F1}"; // / {maxReputation}";
+            reputationText.text = $"{currentReputation:F1}"; // / {maxReputation}";
         }
         // if (reputationBar != null)
         // {

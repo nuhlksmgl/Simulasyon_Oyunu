@@ -77,11 +77,11 @@ public class TimeManager : MonoBehaviour
     {
         if (timeText != null)
         {
-            timeText.text = "Saat: " + string.Format("{0:00}:{1:00}", CurrentHour, CurrentMinute);
+            timeText.text = "" + string.Format("{0:00}:{1:00}", CurrentHour, CurrentMinute);
         }
         if (dayText != null)
         {
-            dayText.text = "Gün: " + CurrentDay;
+            dayText.text = "" + CurrentDay;
         }
     }
 

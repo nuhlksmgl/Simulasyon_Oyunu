@@ -79,6 +79,7 @@ public class CustomerOrderManager : MonoBehaviour
     {
         if (inGameMarket == null) return;
 
+        // FİLTRE: Artık 'isListedForSale' kontrolü de yapılıyor.
         var sellableProducts = inGameMarket.GetAllUnlockedProducts()
             .Where(p => p.physicalStock > 0 && p.price > 0 && p.isListedForSale).ToList();
 
@@ -125,6 +126,7 @@ public class CustomerOrderManager : MonoBehaviour
             newOrder.timeLimit = 600f;
             activeOrders.Add(newOrder);
             OnOrderListChanged?.Invoke();
+            Debug.Log($"YENİ MÜŞTERİ SİPARİŞİ OLUŞTURULDU: ID {newOrder.orderID}, Çeşit: {newOrder.itemsInOrder.Count}");
         }
     }
 
