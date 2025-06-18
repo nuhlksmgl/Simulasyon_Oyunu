@@ -1,39 +1,35 @@
+// FileName: ShippingZone.cs
 using UnityEngine;
 
-// Bu script'i kargolarý teslim edeceðiniz alandaki bir Trigger'a ekleyin.
+[RequireComponent(typeof(BoxCollider))]
 public class ShippingZone : MonoBehaviour
 {
-    void OnTriggerEnter(Collider other)
+    private void Awake()
     {
-        CargoBox cargoBox = other.GetComponent<CargoBox>();
+        GetComponent<Collider>().isTrigger = true;
+    }
 
-        if (cargoBox != null)
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.TryGetComponent<CargoBox>(out CargoBox cargoBox))
         {
-            // Kutunun bir sipariþi olduðundan emin ol
-            if (cargoBox.assignedOrder == null)
+            if (cargoBox.assignedOrder != null)
             {
-                Debug.LogWarning("Bu kutuya bir sipariþ fiþi atanmamýþ.");
-                return;
+                Debug.Log($"Kargo alanýna {cargoBox.assignedOrder.orderID} ID'li sipariþ kutusu býrakýldý. Ýþleniyor...");
+                if (CustomerOrderManager.Instance != null)
+                {
+                    CustomerOrderManager.Instance.ProcessShippedOrder(cargoBox);
+                }
+                else
+                {
+                    Debug.LogError("CustomerOrderManager.Instance bulunamadý! Sipariþ iþlenemedi.");
+                }
+                Destroy(cargoBox.gameObject);
             }
-
-            // GÜNCELLEME: Artýk kutunun kendisinden ceza/ödül bilgisini alýyoruz.
-            float reputationChange = cargoBox.CalculatePackingPenalty();
-
-            if (reputationChange == 0) // Eðer hiç ceza yoksa, bu mükemmel bir pakettir.
+            else
             {
-                // Baþarý puanýný CustomerOrderManager'dan al
-                StoreReputation.Instance.AddReputation(CustomerOrderManager.Instance.reputationForSuccess);
+                Debug.LogWarning("Kargo alanýna sipariþi olmayan bir kutu býrakýldý. Bir iþlem yapýlmadý.");
             }
-            else // Ceza varsa, hesaplanan ceza puanýný uygula
-            {
-                StoreReputation.Instance.AddReputation(reputationChange);
-            }
-
-            // Sipariþi "Tamamlandý" olarak iþaretle (stoktan düþme burada gerçekleþir)
-            CustomerOrderManager.Instance.CompleteOrder(cargoBox.assignedOrder.orderID);
-
-            // Kargo kutusunu ve içindekileri yok et
-            Destroy(other.gameObject);
         }
     }
 }

@@ -1,8 +1,8 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using System;
 
-// Kargo kutularının özelliklerini tutar.
+// Kargo kutularÃ½nÃ½n Ã¶zelliklerini tutar.
 [System.Serializable]
 public class CargoBoxData
 {
@@ -12,7 +12,7 @@ public class CargoBoxData
     public int smallItemCapacity;
 }
 
-// Alışveriş sepetindeki kargo seçeneklerini tutar.
+// AlÃ½Ã¾veriÃ¾ sepetindeki kargo seÃ§eneklerini tutar.
 [System.Serializable]
 public class CargoOption
 {
@@ -21,7 +21,7 @@ public class CargoOption
     public float deliveryTimeMultiplier;
 }
 
-// Pazarda satılan veya sipariş edilen tek bir ürünü temsil eder.
+// Pazarda satÃ½lan veya sipariÃ¾ edilen tek bir Ã¼rÃ¼nÃ¼ temsil eder.
 [System.Serializable]
 public class MarketProduct
 {
@@ -31,17 +31,17 @@ public class MarketProduct
     public bool isLarge;
     public GameObject productPrefab;
 
-    [Tooltip("İşaretliyse, ürün bir kutu içinde değil, doğrudan kendisi olarak teslim edilir.")]
+    [Tooltip("ÃÃ¾aretliyse, Ã¼rÃ¼n bir kutu iÃ§inde deÃ°il, doÃ°rudan kendisi olarak teslim edilir.")]
     public bool isDirectDelivery;
 
-    [Tooltip("İşaretliyse, ürün satın alındığında anında etki eder, kargoyla gelmez.")]
+    [Tooltip("ÃÃ¾aretliyse, Ã¼rÃ¼n satÃ½n alÃ½ndÃ½Ã°Ã½nda anÃ½nda etki eder, kargoyla gelmez.")]
     public bool isInstantPurchase;
 
-    [Tooltip("Bu ürün bir kerelik bir satın alım mı? (Örn: Dükkan Genişletme)")]
+    [Tooltip("Bu Ã¼rÃ¼n bir kerelik bir satÃ½n alÃ½m mÃ½? (Ã–rn: DÃ¼kkan GeniÃ¾letme)")]
     public bool isOneTimePurchase = false;
     [HideInInspector] public bool isPurchased = false;
 
-    [Tooltip("Bu üründen kaç adet satın alındığını sayar.")]
+    [Tooltip("Bu Ã¼rÃ¼nden kaÃ§ adet satÃ½n alÃ½ndÃ½Ã°Ã½nÃ½ sayar.")]
     [HideInInspector] public int purchaseCount = 0;
 
     [Header("Piyasa Dinamikleri")]
@@ -55,7 +55,7 @@ public class MarketProduct
     [HideInInspector] public bool isListedForSale = false;
 }
 
-// Ürünleri gruplamak için kullanılır.
+// ÃœrÃ¼nleri gruplamak iÃ§in kullanÃ½lÃ½r.
 [System.Serializable]
 public class Category
 {
@@ -66,13 +66,13 @@ public class Category
     public List<MarketProduct> productsInCategory;
 }
 
-// Müşteri siparişinin durumunu belirtir.
+// MÃ¼Ã¾teri sipariÃ¾inin durumunu belirtir.
 public enum OrderStatus { Yeni, Hazirlaniyor, Completed, Failed, Paketlendi, Kargoda, TeslimEdildi, IptalEdildi }
 
-// Müşteri siparişinin türünü belirtir.
+// MÃ¼Ã¾teri sipariÃ¾inin tÃ¼rÃ¼nÃ¼ belirtir.
 public enum OrderType { Standart, Express, AyniGun }
 
-// Bir sipariş içindeki tek bir ürün kaleminin detaylarını tutar.
+// Bir sipariÃ¾ iÃ§indeki tek bir Ã¼rÃ¼n kaleminin detaylarÃ½nÃ½ tutar.
 [System.Serializable]
 public class OrderItemDetail
 {
@@ -92,7 +92,7 @@ public class OrderItemDetail
     }
 }
 
-// Tek bir müşteri siparişinin tüm verilerini içeren ana sınıf.
+// Tek bir mÃ¼Ã¾teri sipariÃ¾inin tÃ¼m verilerini iÃ§eren ana sÃ½nÃ½f.
 [System.Serializable]
 public class OrderData
 {
@@ -127,6 +127,6 @@ public class OrderData
 
     public void InitializeCustomer()
     {
-        this.customerName = "Müşteri " + new System.Random().Next(1000, 9999);
+        this.customerName = "MÃ¼Ã¾teri " + new System.Random().Next(1000, 9999);
     }
 }

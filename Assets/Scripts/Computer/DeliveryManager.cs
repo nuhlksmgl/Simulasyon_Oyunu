@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,17 +6,17 @@ public class DeliveryManager : MonoBehaviour
 {
     public static DeliveryManager Instance { get; private set; }
 
-    [Header("Teslimat Ayarları")]
+    [Header("Teslimat AyarlarÃ½")]
     [SerializeField] private BoxCollider deliveryArea;
     [SerializeField] private List<CargoBoxData> boxTypes;
     [SerializeField] private Transform[] shelfSpawnPoints;
     private int nextShelfSpawnIndex = 0;
 
-    [Header("Genel Spawn Ayarları")]
-    [Tooltip("Boş bir yer bulmak için en fazla kaç deneme yapsın?")]
+    [Header("Genel Spawn AyarlarÃ½")]
+    [Tooltip("BoÃ¾ bir yer bulmak iÃ§in en fazla kaÃ§ deneme yapsÃ½n?")]
     [SerializeField] private int maxSpawnAttempts = 30;
 
-    // İç veri yapıları
+    // ÃÃ§ veri yapÃ½larÃ½
     private class ActiveDelivery { public float DeliveryTimestamp; public List<PackedBox> PackedBoxes; }
     private class PackedBox { public GameObject BoxPrefab; public List<MarketProduct> ItemsInBox; }
     private List<ActiveDelivery> activeDeliveries = new List<ActiveDelivery>();
@@ -116,16 +116,16 @@ public class DeliveryManager : MonoBehaviour
         }
     }
 
-    // --- GÜNCELLENMİŞ VE DÜZELTİLMİŞ SPAWN METODU ---
+    // --- GÃœNCELLENMÃÃ VE DÃœZELTÃLMÃÃ SPAWN METODU ---
     void SpawnBoxes(List<PackedBox> packedBoxes)
     {
-        if (deliveryArea == null) { Debug.LogError("DeliveryManager: Teslimat Alanı atanmamış!"); return; }
+        if (deliveryArea == null) { Debug.LogError("DeliveryManager: Teslimat AlanÃ½ atanmamÃ½Ã¾!"); return; }
 
         Bounds areaBounds = deliveryArea.bounds;
 
         try
         {
-            // Alanın kendi collider'ını en başta bir kez kapatıyoruz.
+            // AlanÃ½n kendi collider'Ã½nÃ½ en baÃ¾ta bir kez kapatÃ½yoruz.
             deliveryArea.enabled = false;
 
             foreach (var packedBox in packedBoxes)
@@ -133,8 +133,8 @@ public class DeliveryManager : MonoBehaviour
                 Collider objectCollider = packedBox.BoxPrefab.GetComponent<Collider>();
                 if (objectCollider == null)
                 {
-                    Debug.LogError($"{packedBox.BoxPrefab.name} prefabında Collider yok!");
-                    continue; // Bu kutuyu atla, diğerlerine devam et
+                    Debug.LogError($"{packedBox.BoxPrefab.name} prefabÃ½nda Collider yok!");
+                    continue; // Bu kutuyu atla, diÃ°erlerine devam et
                 }
 
                 Vector3 objectHalfExtents = objectCollider.bounds.extents;
@@ -142,7 +142,7 @@ public class DeliveryManager : MonoBehaviour
                 int attempts = 0;
                 bool positionFound = false;
 
-                // Bu kutu için boş bir yer bulana kadar döngüye gir.
+                // Bu kutu iÃ§in boÃ¾ bir yer bulana kadar dÃ¶ngÃ¼ye gir.
                 while (attempts < maxSpawnAttempts)
                 {
                     float randomX = Random.Range(areaBounds.min.x + objectHalfExtents.x, areaBounds.max.x - objectHalfExtents.x);
@@ -158,7 +158,7 @@ public class DeliveryManager : MonoBehaviour
                         spawnPosition = new Vector3(randomX, areaBounds.min.y + objectHalfExtents.y, randomZ);
                     }
 
-                    // Belirlenen hacmin tamamen boş olup olmadığını kontrol et.
+                    // Belirlenen hacmin tamamen boÃ¾ olup olmadÃ½Ã°Ã½nÃ½ kontrol et.
                     if (Physics.OverlapBox(spawnPosition, objectHalfExtents, Quaternion.identity).Length == 0)
                     {
                         positionFound = true;
@@ -183,13 +183,13 @@ public class DeliveryManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"Alan dolu, {packedBox.BoxPrefab.name} için yer bulunamadı!");
+                    Debug.LogWarning($"Alan dolu, {packedBox.BoxPrefab.name} iÃ§in yer bulunamadÃ½!");
                 }
             }
         }
         finally
         {
-            // Tüm kutular yerleştirildikten sonra collider'ı tekrar aç.
+            // TÃ¼m kutular yerleÃ¾tirildikten sonra collider'Ã½ tekrar aÃ§.
             deliveryArea.enabled = true;
         }
     }
@@ -198,7 +198,7 @@ public class DeliveryManager : MonoBehaviour
     {
         if (shelfSpawnPoints == null || shelfSpawnPoints.Length == 0)
         {
-            Debug.LogError("HATA: Raf için spawn noktası (Shelf Spawn Points) atanmamış!");
+            Debug.LogError("HATA: Raf iÃ§in spawn noktasÃ½ (Shelf Spawn Points) atanmamÃ½Ã¾!");
             return;
         }
 

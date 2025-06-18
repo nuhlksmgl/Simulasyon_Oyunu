@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// FileName: ObjectPickup.cs
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,54 +12,38 @@ public class ObjectPickup : MonoBehaviour
     [SerializeField] private float pickupDistance = 5.0f;
     [SerializeField] private float shelfPlaceDistance = 2.0f;
     [SerializeField] private float cargoPlaceDistance = 7.0f;
+    [Tooltip("Slip'i yakındaki bir kutuya yapıştırmak için maksimum mesafe.")]
+    [SerializeField] private float attachmentRadius = 2.5f;
 
     [Header("Büyük Nesne Taşıma Ayarları")]
     [SerializeField] private Transform containerHoldPosition;
     [SerializeField] private float carryDistance = 4.0f;
 
     [Header("Yumuşak Alma Animasyon Ayarları")]
-    [Tooltip("Objenin ele gelme animasyonunun saniye cinsinden süresi.")]
     [SerializeField] private float pickupDuration = 0.25f;
-    [Tooltip("Animasyonun başlangıç ve bitişini yavaşlatarak daha yumuşak bir his verir.")]
     [SerializeField] private bool useSmoothStep = true;
 
     [Header("Diğer Ayarlar")]
     [SerializeField] private Color highlightColor = new Color(0, 1, 0, 1f);
     [SerializeField] private GameObject crosshair;
-    [Tooltip("Oyun başında sahnede zaten var olan slotları buraya atayın.")]
-    [SerializeField] private List<Transform> initialShelfSlots; // DEĞİŞİKLİK: Dizi'den List'e çevrildi
+    [SerializeField] private List<Transform> initialShelfSlots;
     [SerializeField] private float dropForwardOffset = 1.5f;
 
-    // DEĞİŞİKLİK: Tüm slotları tutacak ana dinamik liste
     private List<Transform> allAvailableSlots = new List<Transform>();
-
     private GameObject heldObject;
     private GameObject carriedContainer;
     private GameObject highlightedObject;
     private Camera mainCamera;
     private Color originalColor;
     private bool isHighlighted;
-    private LayerMask pickupLayer;
-    private LayerMask slipLayer;
-    private LayerMask cargoBoxLayer;
-    private LayerMask interactableLayers;
-
-    private Coroutine pickupCoroutine;
-    private Coroutine containerPickupCoroutine;
+    private LayerMask pickupLayer, slipLayer, cargoBoxLayer, interactableLayers;
+    private Coroutine pickupCoroutine, containerPickupCoroutine;
     private Vector3 originalContainerScale;
 
     private void Awake()
     {
         mainCamera = Camera.main;
-        if (mainCamera == null) Debug.LogError("Main Camera bulunamadı!", this);
-        if (holdPosition == null) Debug.LogError("HoldPosition atanmamış!", this);
-        if (slipHoldPosition == null) Debug.LogError("SlipHoldPosition atanmamış!", this);
-        if (containerHoldPosition == null) Debug.LogError("ContainerHoldPosition atanmamış!", this);
-        if (crosshair == null) Debug.LogError("Crosshair atanmamış!", this);
-
-        // DEĞİŞİKLİK: Başlangıçta atanan slotları ana listemize ekleyelim.
         allAvailableSlots.AddRange(initialShelfSlots);
-
         pickupLayer = LayerMask.GetMask("Pickup");
         slipLayer = LayerMask.GetMask("Slip");
         cargoBoxLayer = LayerMask.GetMask("CargoBox");
@@ -67,35 +52,49 @@ public class ObjectPickup : MonoBehaviour
 
     private void Update()
     {
-        HandleInput();
+        HandlePickupAndPlaceInput();
+        HandleInteractionInput();
         HighlightObjectUnderMouse();
         UpdateCrosshairVisibility();
     }
 
-    // YENİ EKLENDİ: Yeni slotları kaydetmek için metotlar
-    #region Slot Management
-    public void RegisterSlots(Transform[] newSlots)
+    private void HandleInteractionInput()
     {
-        allAvailableSlots.AddRange(newSlots);
-        Debug.Log($"{newSlots.Length} adet yeni raf slotu sisteme eklendi. Toplam kullanılabilir slot: {allAvailableSlots.Count}");
-    }
-
-    public void UnregisterSlots(Transform[] slotsToRemove)
-    {
-        foreach (var slot in slotsToRemove)
+        if (Input.GetKeyDown(KeyCode.F))
         {
-            allAvailableSlots.Remove(slot);
+            if (heldObject != null && heldObject.TryGetComponent<Slip>(out Slip heldSlip))
+            {
+                Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, attachmentRadius, cargoBoxLayer);
+
+                List<CargoBox> validTargets = new List<CargoBox>();
+                foreach (var boxCollider in nearbyColliders)
+                {
+                    if (boxCollider.GetComponentInParent<CargoBox>() is CargoBox currentBox)
+                    {
+                        if (!currentBox.HasValidAssignedOrder())
+                        {
+                            validTargets.Add(currentBox);
+                        }
+                    }
+                }
+
+                if (validTargets.Count == 0)
+                {
+                    return;
+                }
+
+                CargoBox closestBox = validTargets.OrderBy(box => Vector3.Distance(transform.position, box.transform.position)).First();
+
+                if (closestBox != null)
+                {
+                    closestBox.AttachSlip(heldSlip);
+                    heldObject = null;
+                }
+            }
         }
-        Debug.Log($"{slotsToRemove.Length} adet raf slotu sistemden kaldırıldı. Kalan slot: {allAvailableSlots.Count}");
-    }
-    #endregion
-
-    public bool IsHoldingAnything()
-    {
-        return heldObject != null || carriedContainer != null;
     }
 
-    private void HandleInput()
+    private void HandlePickupAndPlaceInput()
     {
         if (Input.GetMouseButtonDown(0))
         {
@@ -160,6 +159,24 @@ public class ObjectPickup : MonoBehaviour
         }
     }
 
+    public void RegisterSlots(Transform[] newSlots)
+    {
+        allAvailableSlots.AddRange(newSlots);
+    }
+
+    public void UnregisterSlots(Transform[] slotsToRemove)
+    {
+        foreach (var slot in slotsToRemove)
+        {
+            allAvailableSlots.Remove(slot);
+        }
+    }
+
+    public bool IsHoldingAnything()
+    {
+        return heldObject != null || carriedContainer != null;
+    }
+
     private void DropCarriedContainer()
     {
         if (carriedContainer == null) return;
@@ -185,10 +202,8 @@ public class ObjectPickup : MonoBehaviour
             StopCoroutine(pickupCoroutine);
             pickupCoroutine = null;
         }
-
         Vector3 dropPosition = FindSafeDropPosition();
         heldObject.transform.SetParent(null);
-
         if (heldObject.TryGetComponent<Product>(out var product))
         {
             heldObject.transform.localScale = product.GetOriginalWorldScale();
@@ -199,7 +214,6 @@ public class ObjectPickup : MonoBehaviour
             heldObject.transform.localScale = slip.GetOriginalScale();
             slip.OnDropped();
         }
-
         Rigidbody rb = heldObject.GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -207,34 +221,21 @@ public class ObjectPickup : MonoBehaviour
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
-
-        heldObject.transform.position = dropPosition;
-        heldObject.transform.rotation = Quaternion.identity;
+        heldObject.transform.SetPositionAndRotation(dropPosition, Quaternion.identity);
         heldObject = null;
     }
 
     private Vector3 FindSafeDropPosition()
     {
         if (heldObject == null) return transform.position;
-        Collider heldObjectCollider = heldObject.GetComponent<Collider>();
-        if (heldObjectCollider == null)
-        {
-            return mainCamera.transform.position + mainCamera.transform.forward * dropForwardOffset;
-        }
-
-        Ray ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
-        heldObjectCollider.enabled = false;
-        bool surfaceFound = Physics.Raycast(ray, out RaycastHit hit, pickupDistance * 2f);
-        heldObjectCollider.enabled = true;
-
-        if (surfaceFound)
-        {
-            return hit.point + hit.normal * heldObjectCollider.bounds.extents.y;
-        }
-        else
-        {
-            return mainCamera.transform.position + mainCamera.transform.forward * dropForwardOffset;
-        }
+        Collider c = heldObject.GetComponent<Collider>();
+        if (c == null) return mainCamera.transform.position + mainCamera.transform.forward * dropForwardOffset;
+        Ray r = mainCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+        c.enabled = false;
+        bool found = Physics.Raycast(r, out RaycastHit hit, pickupDistance * 2f);
+        c.enabled = true;
+        if (found) return hit.point + hit.normal * c.bounds.extents.y;
+        return mainCamera.transform.position + mainCamera.transform.forward * dropForwardOffset;
     }
 
     private void HighlightObjectUnderMouse()
@@ -246,14 +247,10 @@ public class ObjectPickup : MonoBehaviour
         {
             if (heldObject != null && hit.collider.gameObject == heldObject) return;
             if (carriedContainer != null && hit.collider.transform.IsChildOf(carriedContainer.transform)) return;
-
             if (hit.collider.GetComponentInParent<CargoBox>() is CargoBox box)
             {
                 Product productInBox = box.GetProductAtRay(ray, pickupDistance);
-                if (productInBox != null)
-                {
-                    objectToHighlight = productInBox.gameObject;
-                }
+                if (productInBox != null) objectToHighlight = productInBox.gameObject;
             }
             else if (hit.collider.CompareTag("Pickup") || hit.collider.CompareTag("SlipTag"))
             {
@@ -272,11 +269,8 @@ public class ObjectPickup : MonoBehaviour
     {
         if (crosshair != null)
         {
-            bool shouldBeActive = (heldObject == null && carriedContainer == null && pickupCoroutine == null && containerPickupCoroutine == null);
-            if (crosshair.activeSelf != shouldBeActive)
-            {
-                crosshair.SetActive(shouldBeActive);
-            }
+            bool shouldBeActive = !IsHoldingAnything() && pickupCoroutine == null && containerPickupCoroutine == null;
+            if (crosshair.activeSelf != shouldBeActive) crosshair.SetActive(shouldBeActive);
         }
     }
 
@@ -293,22 +287,19 @@ public class ObjectPickup : MonoBehaviour
     private void TryPickupFromWorld(RaycastHit hit)
     {
         GameObject targetObject = hit.collider.gameObject;
-        if (targetObject.CompareTag("Pickup") || targetObject.CompareTag("SlipTag"))
+        if (targetObject.TryGetComponent<Product>(out var p) && p.transform.parent != null)
         {
-            if (targetObject.TryGetComponent<Product>(out var product) && targetObject.transform.parent != null)
-            {
-                targetObject.transform.SetParent(null);
-                targetObject.transform.localScale = product.GetOriginalWorldScale();
-            }
-            if (targetObject.TryGetComponent<Slip>(out var slip) && targetObject.transform.parent != null)
-            {
-                targetObject.transform.SetParent(null);
-                targetObject.transform.localScale = slip.GetOriginalScale();
-            }
-            heldObject = targetObject;
-            if (highlightedObject == heldObject) RemoveHighlight();
-            StartPickupAnimation();
+            p.transform.SetParent(null);
+            p.transform.localScale = p.GetOriginalWorldScale();
         }
+        if (targetObject.TryGetComponent<Slip>(out var s) && s.transform.parent != null)
+        {
+            s.transform.SetParent(null);
+            s.transform.localScale = s.GetOriginalScale();
+        }
+        heldObject = targetObject;
+        if (highlightedObject == heldObject) RemoveHighlight();
+        StartPickupAnimation();
     }
 
     private void StartPickupAnimation()
@@ -316,133 +307,87 @@ public class ObjectPickup : MonoBehaviour
         if (heldObject == null) return;
         if (pickupCoroutine != null) StopCoroutine(pickupCoroutine);
         if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
-        Transform targetHoldPosition = heldObject.CompareTag("SlipTag") ? slipHoldPosition : holdPosition;
-        pickupCoroutine = StartCoroutine(SmoothPickupCoroutine(heldObject.transform, targetHoldPosition));
-        if (heldObject.TryGetComponent<Product>(out Product product)) product.OnPickedUp();
-        if (heldObject.TryGetComponent<Slip>(out Slip slip)) slip.OnPickedUp();
+        Transform target = heldObject.CompareTag("SlipTag") ? slipHoldPosition : holdPosition;
+        pickupCoroutine = StartCoroutine(SmoothPickupCoroutine(heldObject.transform, target));
+        if (heldObject.TryGetComponent<Product>(out Product p)) p.OnPickedUp();
+        if (heldObject.TryGetComponent<Slip>(out Slip s)) s.OnPickedUp();
     }
 
-    private IEnumerator SmoothPickupCoroutine(Transform objectToMove, Transform targetHoldPosition)
+    private IEnumerator SmoothPickupCoroutine(Transform obj, Transform target)
     {
-        float elapsedTime = 0f;
-        Vector3 startPosition = objectToMove.position;
-        Quaternion startRotation = objectToMove.rotation;
-        while (elapsedTime < pickupDuration)
+        float e = 0f; Vector3 sP = obj.position; Quaternion sR = obj.rotation;
+        while (e < pickupDuration)
         {
-            elapsedTime += Time.deltaTime;
-            float progress = Mathf.Clamp01(elapsedTime / pickupDuration);
-            if (useSmoothStep) progress = Mathf.SmoothStep(0, 1, progress);
-            objectToMove.position = Vector3.Lerp(startPosition, targetHoldPosition.position, progress);
-            objectToMove.rotation = Quaternion.Slerp(startRotation, targetHoldPosition.rotation, progress);
+            e += Time.deltaTime; float p = Mathf.Clamp01(e / pickupDuration);
+            if (useSmoothStep) p = Mathf.SmoothStep(0, 1, p);
+            obj.SetPositionAndRotation(Vector3.Lerp(sP, target.position, p), Quaternion.Slerp(sR, target.rotation, p));
             yield return null;
         }
-        objectToMove.SetParent(targetHoldPosition);
-        objectToMove.position = targetHoldPosition.position;
-        objectToMove.rotation = targetHoldPosition.rotation;
-        if (objectToMove.CompareTag("Pickup"))
-        {
-            objectToMove.localPosition = Vector3.zero;
-            objectToMove.localRotation = Quaternion.identity;
-        }
-        else if (objectToMove.CompareTag("SlipTag"))
-        {
-            objectToMove.localPosition = Vector3.zero;
-            objectToMove.localRotation = Quaternion.Euler(-90f, 0f, 0f);
-        }
+        obj.SetParent(target);
+        obj.SetPositionAndRotation(target.position, target.rotation);
+        obj.localPosition = Vector3.zero;
+        if (obj.CompareTag("Pickup")) obj.localRotation = Quaternion.identity;
+        else if (obj.CompareTag("SlipTag")) obj.localRotation = Quaternion.Euler(-90f, 0f, 0f);
         pickupCoroutine = null;
     }
 
-    private IEnumerator SmoothContainerPickupCoroutine(Transform objectToMove, Transform targetHoldPosition)
+    private IEnumerator SmoothContainerPickupCoroutine(Transform obj, Transform target)
     {
-        float elapsedTime = 0f;
-        Vector3 startPosition = objectToMove.position;
-        Quaternion startRotation = objectToMove.rotation;
-        while (elapsedTime < pickupDuration)
+        float e = 0f; Vector3 sP = obj.position; Quaternion sR = obj.rotation;
+        while (e < pickupDuration)
         {
-            elapsedTime += Time.deltaTime;
-            float progress = Mathf.Clamp01(elapsedTime / pickupDuration);
-            if (useSmoothStep) progress = Mathf.SmoothStep(0, 1, progress);
-
-            objectToMove.position = Vector3.Lerp(startPosition, targetHoldPosition.position, progress);
-            objectToMove.rotation = Quaternion.Slerp(startRotation, targetHoldPosition.rotation, progress);
+            e += Time.deltaTime; float p = Mathf.Clamp01(e / pickupDuration);
+            if (useSmoothStep) p = Mathf.SmoothStep(0, 1, p);
+            obj.SetPositionAndRotation(Vector3.Lerp(sP, target.position, p), Quaternion.Slerp(sR, target.rotation, p));
             yield return null;
         }
-        objectToMove.SetParent(targetHoldPosition);
-        objectToMove.position = targetHoldPosition.position;
-        objectToMove.rotation = targetHoldPosition.rotation;
-        objectToMove.localPosition = Vector3.zero;
-        objectToMove.localRotation = Quaternion.identity;
+        obj.SetParent(target);
+        obj.SetPositionAndRotation(target.position, target.rotation);
+        obj.localPosition = Vector3.zero;
+        obj.localRotation = Quaternion.identity;
         containerPickupCoroutine = null;
     }
 
-    // GÜNCELLENMİŞ METOT
     private void TryPlaceObjectOnShelf()
     {
         if (heldObject == null) return;
-        Product productToPlace = heldObject.GetComponent<Product>();
-        if (productToPlace == null) { DropObject(); return; }
-
-        Transform bestSlot = null;
-        float closestDistance = float.MaxValue;
-
+        Product p = heldObject.GetComponent<Product>();
+        if (p == null) { DropObject(); return; }
+        Transform bestSlot = null; float closestDist = float.MaxValue;
         var emptySlots = allAvailableSlots.Where(s => s.childCount == 0).ToList();
-
-        foreach (Transform slot in emptySlots)
+        foreach (Transform s in emptySlots)
         {
-            float distance = Vector3.Distance(mainCamera.transform.position, slot.position);
-            if (distance < closestDistance)
-            {
-                closestDistance = distance;
-                bestSlot = slot;
-            }
+            float d = Vector3.Distance(mainCamera.transform.position, s.position);
+            if (d < closestDist) { closestDist = d; bestSlot = s; }
         }
-
-        if (bestSlot != null && closestDistance <= shelfPlaceDistance)
+        if (bestSlot != null && closestDist <= shelfPlaceDistance)
         {
             heldObject.transform.SetParent(bestSlot);
-            heldObject.transform.localPosition = Vector3.zero;
-            heldObject.transform.localRotation = Quaternion.identity;
-
-            Vector3 parentWorldScale = bestSlot.lossyScale;
-            Vector3 originalWorldScale = productToPlace.GetOriginalWorldScale();
-            heldObject.transform.localScale = new Vector3(
-                originalWorldScale.x / (parentWorldScale.x == 0 ? 1 : parentWorldScale.x),
-                originalWorldScale.y / (parentWorldScale.y == 0 ? 1 : parentWorldScale.y),
-                originalWorldScale.z / (parentWorldScale.z == 0 ? 1 : parentWorldScale.z)
-            );
-
+            heldObject.transform.SetPositionAndRotation(bestSlot.position, bestSlot.rotation);
+            heldObject.transform.localScale = p.GetOriginalWorldScale();
             if (heldObject.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
-            productToPlace.isHeld = false;
+            p.isHeld = false;
             heldObject = null;
         }
-        else
-        {
-            DropObject();
-        }
+        else DropObject();
     }
 
-    private void TryPlaceObjectInCargoBox(CargoBox cargoBox)
+    private void TryPlaceObjectInCargoBox(CargoBox box)
     {
-        if (heldObject == null || cargoBox == null) return;
-        Product product = heldObject.GetComponent<Product>();
-        if (product != null && cargoBox.TryPlaceProduct(product))
-        {
-            heldObject = null;
-        }
-        else
-        {
-            DropObject();
-        }
+        if (heldObject == null || box == null) return;
+        Product p = heldObject.GetComponent<Product>();
+        if (p != null && box.TryPlaceProduct(p)) heldObject = null;
+        else DropObject();
     }
 
     private void ApplyHighlight(GameObject obj)
     {
         if (obj == null) return;
-        if (obj.TryGetComponent<Slip>(out Slip slip)) slip.Highlight(true);
-        else if (obj.TryGetComponent<Renderer>(out Renderer renderer))
+        if (obj.TryGetComponent<Slip>(out Slip s)) s.Highlight(true);
+        else if (obj.TryGetComponent<Renderer>(out Renderer r))
         {
-            originalColor = renderer.material.color;
-            renderer.material.color = highlightColor;
+            originalColor = r.material.color;
+            r.material.color = highlightColor;
             isHighlighted = true;
         }
     }
@@ -450,17 +395,11 @@ public class ObjectPickup : MonoBehaviour
     private void RemoveHighlight()
     {
         if (highlightedObject == null) return;
-        if (highlightedObject.TryGetComponent<Slip>(out Slip slip)) slip.Highlight(false);
-        else if (highlightedObject.TryGetComponent<Renderer>(out Renderer renderer) && isHighlighted)
-            renderer.material.color = originalColor;
+        if (highlightedObject.TryGetComponent<Slip>(out Slip s)) s.Highlight(false);
+        else if (highlightedObject.TryGetComponent<Renderer>(out Renderer r) && isHighlighted) r.material.color = originalColor;
         isHighlighted = false;
     }
 
     public GameObject GetHeldObject() => heldObject;
-
-    public void ClearHeldObject()
-    {
-        if (heldObject != null) Destroy(heldObject);
-        heldObject = null;
-    }
+    public void ClearHeldObject() { if (heldObject != null) Destroy(heldObject); heldObject = null; }
 }

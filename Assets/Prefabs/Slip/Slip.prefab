@@ -67,8 +67,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
+  m_sharedMaterial: {fileID: -1423936331548901602, guid: 32d24b42edb76704990b057c1a56a373, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -305,6 +305,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   slipRenderer: {fileID: 5547811547429322280}
   textMeshPro: {fileID: 1705117597802493160}
+  highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1 &9016947100046285423
 GameObject:
   m_ObjectHideFlags: 0
